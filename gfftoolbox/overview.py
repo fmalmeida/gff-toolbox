@@ -1,3 +1,22 @@
+## Def overview help
+usage_overview="""
+gff-toolbox:
+
+            Overview
+
+This command uses BCBio library to let you get the gist of your GFF file
+
+usage:
+    gff-toolbox overview [ -h|--help ] [ --input <gff> ]
+
+options:
+    -h --help                                               Show this screen
+    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it
+
+example:
+    gff-toolbox overview -i input.gff
+"""
+
 ##################################
 ### Loading Necessary Packages ###
 ##################################

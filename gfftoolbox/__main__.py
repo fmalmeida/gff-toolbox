@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+license="""
 Copyright 2020 Felipe Almeida (almeidafmarques@gmail.com)
 https://github.com/fmalmeida/gff-toolbox
 
@@ -20,76 +20,19 @@ Copyright (C) 2020 Felipe Marques de Almeida (almeidafmarques@gmail.com)
 License: Public Domain
 
 usage:
-    gff-toolbox [ -h|--help ] [ -v|--version ]
-    gff-toolbox overview [ -h|--help ] [ -i <gff> ]
-    gff-toolbox filter   [ -h|--help ] [ --input <gff> ] [ --pattern <string> | --list <file> ] [ --field <string --column <int> --sort ]
+    gff-toolbox [ -h|--help ] [ -v|--version ] [ --license ]
+    gff-toolbox <command> [ -h|--help ] [ <args>... ]
 
 options:
     -h --help                                               Show this screen
     -v --version                                            Show version information
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it
-    -p, --pattern=<string>                                  Pattern to search in the GFF file
-    -l, --list=<file>                                       List of patterns to search in the GFF file
-    -c, --column=<int>                                      Apply pattern search in which GFF columns? [Default: 9]
-    -f, --field=<string>                                    Apply pattern search in which column field? [Default: ID]
-    --sort                                                  Sort the GFF by the start position
+    --license                                               Show LEGAL LICENSE information
 
 commands:
     overview                                                This command is very useful to get the gist of your GFF file
     filter                                                  This command lets you filter your GFF based on one or multiple patterns
 
 Use: `gff-toolbox <commmand> -h` to get more help and see examples.
-"""
-
-## Def overview help
-usage_overview="""
-gff-toolbox:
-
-            Overview
-
-This command uses BCBio library to let you get the gist of your GFF file
-
-usage:
-    gff-toolbox overview [ -h|--help ] [ --input <gff> ]
-
-options:
-    -h --help                                               Show this screen
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it
-
-example:
-    gff-toolbox overview -i input.gff
-"""
-
-## Def overview help
-usage_filter="""
-gff-toolbox:
-
-            Filter
-
-This command uses Biopython library to parse and filter your GFF file as you wish. It targets the
-attributes column of the GFF.
-
-usage:
-    gff-toolbox filter [ -h|--help ] [ --input <gff> ] [ --pattern <string> | --list <file> ] [ --field <string --column <int> --sort ]
-
-options:
-    -h --help                                               Show this screen
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it
-    -p, --pattern=<string>                                  Pattern to search in the GFF file
-    -l, --list=<file>                                       List of patterns to search in the GFF file
-    -c, --column=<int>                                      Apply pattern search in which GFF columns? [Default: 9]
-    -f, --field=<string>                                    Only useful if applying the pattern search in the 9th column,
-                                                            the attributes column. This parameter sets in which of the fields
-                                                            of the 9th column to apply the pattern search [Default: ID]
-    --sort                                                  Sort the GFF by the start position
-
-example:
-    ## Simple filter in any column: wheter a line contain a pattern in a specific column (like grep)
-    gff-toolbox filter -i test/input.gff -c 2 -p "barrnap:0.9" --sort
-
-    ## Complex filter, based on the attributes column. It filters the lines that contain one or more specific patterns
-    ## in a specific field of the GFF attributes column. Good for filtering itens of interest such as gene ids, gene products, etc.
-    gff-toobox filter -i test/input.gff -p
 """
 
 ##################################
@@ -108,35 +51,53 @@ from .version import *
 
 ## Defining main
 def main():
-    # Get the program version from another file.
+    # Parse docopt
     __version__ = get_version()
-    arguments = docopt(usage, version=__version__, help=False)
+    arguments = docopt(usage, version=__version__, help=False, options_first=True)
 
-    ## GFF overview
-    if arguments['overview']:
+    ############################
+    ### GFF overview command ###
+    ############################
+    if arguments['<command>'] == 'overview':
 
-        if arguments['overview'] and arguments['--help']:
+        # Parse docopt
+        args_overview = docopt(usage_overview, version=__version__, help=False)
+
+        if args_overview['overview'] and args_overview['--help']:
             print(usage_overview.strip())
 
-        elif arguments['overview'] and arguments['--input']:
-            check_gff(arguments['--input'])
+        elif args_overview['overview'] and args_overview['--input']:
+            check_gff(args_overview['--input'])
 
         else:
             print(usage_overview.strip())
 
-    ## GFF filter
-    if arguments['filter']:
+    ##########################
+    ### GFF filter command ###
+    ##########################
+    elif arguments['<command>'] == 'filter':
 
-        if arguments['filter'] and arguments['--help']:
+        # Parse docopt
+        args_filter = docopt(usage_filter, version=__version__, help=False)
+
+        if args_filter['filter'] and args_filter['--help']:
             print(usage_filter.strip())
 
-        elif arguments['filter'] and arguments['--input']:
-            filter_gff_pattern(arguments['--input'], arguments['--column'], arguments['--pattern'], arguments['--sort'])
+        elif args_filter['filter'] and args_filter['--input']:
+            filter_gff_pattern(args_filter['--input'], args_filter['--column'], args_filter['--pattern'], args_filter['--sort'])
 
         else:
             print(usage_filter.strip())
 
-    ## None
+    #####################
+    ### Check license ###
+    #####################
+    elif arguments['--license']:
+        print(license.strip())
+
+    #######################################
+    ### Without commands nor parameters ###
+    #######################################
     else:
         print(usage.strip())
 
