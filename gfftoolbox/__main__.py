@@ -83,8 +83,11 @@ def main():
         if args_filter['filter'] and args_filter['--help']:
             print(usage_filter.strip())
 
-        elif args_filter['filter'] and args_filter['--input']:
-            filter_gff_pattern(args_filter['--input'], args_filter['--column'], args_filter['--pattern'], args_filter['--sort'])
+        ## Single pattern
+        elif args_filter['filter'] and args_filter['--input'] and args_filter['--pattern']:
+            filter(args_filter['--input'], args_filter['--column'],
+                   args_filter['--pattern'], args_filter['--sort'],
+                   args_filter['--field'])
 
         else:
             print(usage_filter.strip())
