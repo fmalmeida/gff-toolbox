@@ -1,0 +1,6 @@
+docopt
+dna_features_viewer
+Bio.SeqIO
+pprint
+BCBio
+matplotlib
