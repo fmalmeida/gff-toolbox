@@ -2,7 +2,7 @@
 ### Loading Necessary Packages ###
 ##################################
 import Bio.SeqIO
-from pprint import pprint
+from pprintpp import pprint
 from BCBio import GFF
 from BCBio.GFF import GFFExaminer
 

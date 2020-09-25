@@ -1,0 +1,4 @@
+build/
+dist/
+gff_toolbox.egg-info/
+gfftoolbox/__pycache__/

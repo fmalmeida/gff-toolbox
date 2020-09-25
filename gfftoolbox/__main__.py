@@ -22,7 +22,7 @@ License: Public Domain
 usage:
     gff-toolbox [ -h|--help ] [ -v|--version ]
     gff-toolbox overview [ -h|--help ] [ -i <gff> ]
-    gff-toolbox filter   [ -h|--help ] [ --input <gff> ] [ --patern <string> | --list <file> ] [ --field <string ]
+    gff-toolbox filter   [ -h|--help ] [ --input <gff> ] [ --pattern <string> | --list <file> ] [ --field <string --column <int> --sort ]
 
 options:
     -h --help                                               Show this screen
@@ -32,6 +32,7 @@ options:
     -l, --list=<file>                                       List of patterns to search in the GFF file
     -c, --column=<int>                                      Apply pattern search in which GFF columns? [Default: 9]
     -f, --field=<string>                                    Apply pattern search in which column field? [Default: ID]
+    --sort                                                  Sort the GFF by the start position
 
 commands:
     overview                                                This command is very useful to get the gist of your GFF file
@@ -69,7 +70,7 @@ This command uses Biopython library to parse and filter your GFF file as you wis
 attributes column of the GFF.
 
 usage:
-    gff-toolbox filter [ -h|--help ] [ --input <gff> ] [ --patern <string> | --list <file> ] [ --field <string ]
+    gff-toolbox filter [ -h|--help ] [ --input <gff> ] [ --pattern <string> | --list <file> ] [ --field <string --column <int> --sort ]
 
 options:
     -h --help                                               Show this screen
@@ -80,9 +81,15 @@ options:
     -f, --field=<string>                                    Only useful if applying the pattern search in the 9th column,
                                                             the attributes column. This parameter sets in which of the fields
                                                             of the 9th column to apply the pattern search [Default: ID]
+    --sort                                                  Sort the GFF by the start position
 
 example:
-    gff-toolbox filter -i input.gff
+    ## Simple filter in any column: wheter a line contain a pattern in a specific column (like grep)
+    gff-toolbox filter -i test/input.gff -c 2 -p "barrnap:0.9" --sort
+
+    ## Complex filter, based on the attributes column. It filters the lines that contain one or more specific patterns
+    ## in a specific field of the GFF attributes column. Good for filtering itens of interest such as gene ids, gene products, etc.
+    gff-toobox filter -i test/input.gff -p
 """
 
 ##################################
@@ -97,10 +104,13 @@ import sys
 ########################
 from .overview import *
 from .filter import *
+from .version import *
 
 ## Defining main
 def main():
-    arguments = docopt(usage, version='v0.1 by Felipe Almeida', help=False)
+    # Get the program version from another file.
+    __version__ = get_version()
+    arguments = docopt(usage, version=__version__, help=False)
 
     ## GFF overview
     if arguments['overview']:
@@ -121,7 +131,7 @@ def main():
             print(usage_filter.strip())
 
         elif arguments['filter'] and arguments['--input']:
-            filter_gff_pattern(arguments['--input'])
+            filter_gff_pattern(arguments['--input'], arguments['--column'], arguments['--pattern'], arguments['--sort'])
 
         else:
             print(usage_filter.strip())

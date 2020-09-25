@@ -25,7 +25,7 @@ def readme():
 
 # Get the program version from another file.
 __version__ = '0.0.0'
-exec(open('gff-toolbox/version.py').read())
+exec(open('gfftoolbox/version.py').read())
 
 with open('requirements.txt') as f:
     required = f.read().splitlines()
@@ -39,9 +39,9 @@ setup(name='gff-toolbox',
       author='Felipe Almeida',
       author_email='almeidafmarques@gmail.com',
       license='GPLv3',
-      packages=['gff-toolbox'],
+      packages=['gfftoolbox'],
       install_requires=required,
-      entry_points={"console_scripts": ['gff-toolbox = gff-toolbox.__main__:main']},
+      entry_points={"console_scripts": ['gff-toolbox = gfftoolbox.__main__:main']},
       include_package_data=True,
       zip_safe=False,
       python_requires='>=3.6')
