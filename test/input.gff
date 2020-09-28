@@ -7095,4 +7095,4 @@ contig_7_segment0	Prodigal:002006	CDS	12224	12874	.	+	0	ID=BNHFPCLP_07094;infere
 contig_7_segment0	Prodigal:002006	CDS	12820	13524	.	-	0	ID=BNHFPCLP_07095;inference=ab initio prediction:Prodigal:002006,similar to AA sequence:ISfinder:IS26;locus_tag=BNHFPCLP_07095;product=IS6 family transposase IS26
 contig_7_segment0	Prodigal:002006	CDS	14751	15932	.	+	0	ID=BNHFPCLP_07096;inference=ab initio prediction:Prodigal:002006;locus_tag=BNHFPCLP_07096;product=hypothetical protein
 contig_7_segment0	Prodigal:002006	CDS	16166	16717	.	+	0	ID=BNHFPCLP_07097;inference=ab initio prediction:Prodigal:002006;locus_tag=BNHFPCLP_07097;product=hypothetical protein
-contig_7_segment0	Prodigal:002006	CDS	16701	16979	.	+	0	ID=BNHFPCLP_07098;inference=ab initio prediction:Prodigal:002006;locus_tag=BNHFPCLP_07098;product=hypothetical protein
+contig_7_segment0	Prodigal:002006,CARD	CDS	16701	16979	.	+	0	ID=BNHFPCLP_07098;inference=ab initio prediction:Prodigal:002006;locus_tag=BNHFPCLP_07098;product=hypothetical protein

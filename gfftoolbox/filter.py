@@ -10,7 +10,7 @@ attributes column of the GFF.
 usage:
     gff-toolbox filter [-h|--help ]
     gff-toolbox filter [ --mode loose ] [ --input <gff> ] [ --pattern <string> --column <int> --sort --header ]
-    gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> ]
+    gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> --source <source_limits> ]
 
 options:
 
@@ -41,6 +41,8 @@ options:
                                                 Exact search mode parameters
 
     --chr=<chr_limits>                                      Apply a filter based on the chr/contig/sequence ids (Column 1). Can be a list of patterns separated by commas.
+
+    --source=<source_limits>                                Apply a filter based on the source column (Column 2). Can be a list of patterns separated by commas.
 
 
 example:
@@ -129,9 +131,14 @@ def filter_exact_mode(input_gff, chr_limits):
     # Parse fields
     gff_dict = read_gff_dict(input=input_gff, chr_limits=chr_limits)
 
-    # Check
+    # Filter
     for rec in gff_dict:
         GFF.write([rec], sys.stdout)
+
+    # Check
+    for rec in gff_dict:
+        for features in rec.features:
+            print(features)
 
 ################
 ### Def main ###
