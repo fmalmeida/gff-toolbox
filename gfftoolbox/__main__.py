@@ -87,7 +87,8 @@ def main():
         elif args_filter['filter'] and args_filter['--input'] and not args_filter['--help']:
             filter(input_gff=args_filter['--input'], column=args_filter['--column'],
                    pattern=args_filter['--pattern'], sort=args_filter['--sort'],
-                   header=args_filter['--header'], mode=args_filter['--mode'])
+                   header=args_filter['--header'], mode=args_filter['--mode'],
+                   chr_limits=args_filter['--chr'])
 
         else:
             print(usage_filter.strip())
