@@ -8,23 +8,36 @@ This command uses Biopython library to parse and filter your GFF file as you wis
 attributes column of the GFF.
 
 usage:
-    gff-toolbox filter [ -h|--help ] [ --input <gff> ] [ --pattern <string> | --list <file> ] [ --field <string> --column <int> --sort ]
+    gff-toolbox filter [-h|--help ] [ --input <gff> --mode <search_mode> ] [ --pattern <string> ] [ --column <int> --sort --header ]
 
 options:
-    -h --help                                               Show this screen
 
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it
+                                                Generic parameters
+
+    -h --help                                               Show this screen.
+
+    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences, only features.
+
+    -m, --mode=<search_mode>                                In which mode to search for patterns: loose or exact? In loose mode,
+                                                            the GFF is scanned in a grep-like manner via pandas dataframes in which
+                                                            user must specify a pattern and a column to do the search. This mode is
+                                                            recommended for simple searches with simple GFFs (not nested). The exact
+                                                            mode scans the GFF with Biopython and BCBio packages, treating it as
+                                                            python dictionary. It is recommended for more complex searches and complex
+                                                            GFFs, such as nested GFFs. [Default: exact]
+
+    --sort                                                  Sort the GFF by the contig and start position.
+
+    --header                                                Print GFF header (##gff-version 3)? Some programs require this header.
+
+                                                Loose search mode parameters
 
     -c, --column=<int>                                      Apply pattern search in which GFF columns? [Default: 9]
 
-    -p, --pattern=<string>                                  Pattern to search in the GFF file
+    -p, --pattern=<string>                                  Pattern to search in the GFF file. Can be a list of patterns separated by commas.
 
-    -l, --list=<file>                                       List of patterns to search in the GFF file
+                                                Exact search mode parameters
 
-    -f, --field=<string>                                    Useful when you want to check for a pattern in a specific field of a given column.
-                                                            Format: -f delimiter~~~field~~~val-sign. Remember to use quotation. Read the example below
-
-    --sort                                                  Sort the GFF by the contig and start position
 
 example:
 
@@ -44,78 +57,88 @@ $ gff-toolbox filter -i test/input.gff -c 9 -p "16S ribosomal RNA" --sort -f ";~
 ##################################
 import pandas as pd
 import re
+from BCBio import GFF
 
 ####################################
 ### Function to import gff as df ###
 ####################################
-def read_gff(input):
+def read_gff_df(input):
     return pd.read_csv(input, sep = "\t", comment = "#",
                         names=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
 
 # Guide: ['Chr', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes'
 
+######################################
+### Function to import gff as dict ###
+######################################
+def read_gff_dict(input):
+
+    # limit_info = dict(gff_id=["chr1"], gff_source=["Coding_transcript"])
+    # GFF.parse(in_handle, limit_info=limit_info)
+
+    in_handle = open(input)
+    return GFF.parse(in_handle)
+    in_handle.close()
+
+
 ###################################
 ### Filter df by column pattern ###
 ###################################
 def df_col_filter(df, column, pattern):
-    return df[
-        df[str(column)].str.contains(f"{pattern}")
-        ].to_csv(sep='\t', index=False, header=False).strip()
+    # Split csv
+    pat_list = list(pattern.split(','))
 
-##############################################
-### Function for filtering 9th column list ###
-##############################################
-def Filter(string, substr):
-    return [str for str in string if
-             any(sub in str for sub in substr)]
+    # Filter
+    return df[
+        df[str(column)].str.contains('|'.join(pat_list))
+    ].to_csv(sep='\t', index=False, header=False).strip()
 
 ######################################################
 ### Function for simple filter with single pattern ###
 ######################################################
-def simple_filter_gff_pattern(input_gff, column, pattern, sort):
+def filter_loose_mode(input_gff, column, pattern, sort, header):
 
     # Read GFF file
-    df = read_gff(input_gff)
+    df = read_gff_df(input_gff)
 
-    if int(column) == 9:
-        print("wait")
+    # Sort
+    if sort == True:
+        df = df.sort_values(by=['1', '4'])
 
-    else:
-
-        # Sort
-        if sort == True:
-            df = df.sort_values(by=['1', '4'])
-
-        # header
+    # header
+    if header == True:
         print("##gff-version 3")
 
-        # Filter
-        print(df_col_filter(df, str(column), str(pattern)))
+    # Filter
+    print(df_col_filter(df=df, column=str(column), pattern=str(pattern)))
 
 #######################################################
 ### Function for complex filter with single pattern ###
 #######################################################
-def complex_filter_gff_pattern(input_gff, column, pattern, sort, field):
+def filter_exact_mode(input_gff):
 
     # Parse fields
-    delimiter,field,sign = str(field).split('~~~')
+    gff_dict = read_gff_dict(input_gff)
 
     # Check
-    print(f"""
-Delimiter is: {delimiter}
+    for rec in gff_dict:
+        print(rec.features[0])
 
-Field is: {field}
-
-Sign is: {sign}
-    """)
-
-### Def main
-def filter(input_gff, column, pattern, sort, field):
+################
+### Def main ###
+################
+def filter(input_gff, column, pattern, sort, header, mode):
 
     # Simple filter
-    if field == None:
-        simple_filter_gff_pattern(input_gff, column, pattern, sort)
+    if mode == "loose":
+        filter_loose_mode(input_gff=input_gff, column=column, pattern=pattern, sort=sort, header=header)
 
     # Complex filter
-    elif field != None:
-        complex_filter_gff_pattern(input_gff, column, pattern, sort, field)
+    elif mode == "exact":
+        filter_exact_mode(input_gff=input_gff)
+
+    # Error
+    else:
+        print(f"""
+Error: --mode must be either 'loose' or 'exact'. {mode} is incorrect.
+        """)

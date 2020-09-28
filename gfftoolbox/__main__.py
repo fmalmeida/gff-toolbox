@@ -83,11 +83,11 @@ def main():
         if args_filter['filter'] and args_filter['--help']:
             print(usage_filter.strip())
 
-        ## Single pattern
-        elif args_filter['filter'] and args_filter['--input'] and args_filter['--pattern']:
-            filter(args_filter['--input'], args_filter['--column'],
-                   args_filter['--pattern'], args_filter['--sort'],
-                   args_filter['--field'])
+        ## Run it
+        elif args_filter['filter'] and args_filter['--input'] and not args_filter['--help']:
+            filter(input_gff=args_filter['--input'], column=args_filter['--column'],
+                   pattern=args_filter['--pattern'], sort=args_filter['--sort'],
+                   header=args_filter['--header'], mode=args_filter['--mode'])
 
         else:
             print(usage_filter.strip())
