@@ -110,11 +110,10 @@ def main():
 
         ## Run it
         elif args_convert['convert'] and args_convert['--input'] and args_convert['--format'] and not args_convert['--help']:
-            convert(filename=args_convert['--input'], format=args_convert['--format'],
-                    identifier=args_convert['--id'])
+            convert(filename=args_convert['--input'], format=args_convert['--format'])
 
         else:
-            print(usage_convert.strip())
+            print(args_convert.strip())
 
     #####################
     ### Check license ###
