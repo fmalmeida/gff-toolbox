@@ -31,6 +31,7 @@ options:
 commands:
     overview                                                This command is very useful to get the gist of your GFF file
     filter                                                  This command lets you filter your GFF based on one or multiple patterns
+    convert                                                 This command enables that you convert a GFF file into another formats
 
 Use: `gff-toolbox <commmand> -h` to get more help and see examples.
 """
@@ -48,6 +49,7 @@ import sys
 from .overview import *
 from .filter import *
 from .version import *
+from .convert import *
 
 ## Defining main
 def main():
@@ -94,6 +96,24 @@ def main():
 
         else:
             print(usage_filter.strip())
+
+    ##########################
+    ### GFF filter command ###
+    ##########################
+    elif arguments['<command>'] == 'convert':
+
+        # Parse docopt
+        args_convert = docopt(usage_convert, version=__version__, help=False)
+
+        if args_convert['convert'] and args_convert['--help']:
+            print(usage_convert.strip())
+
+        ## Run it
+        elif args_convert['convert'] and args_convert['--input'] and args_convert['--format'] and not args_convert['--help']:
+            convert(filename=args_convert['--input'], format=args_convert['--format'])
+
+        else:
+            print(usage_convert.strip())
 
     #####################
     ### Check license ###
