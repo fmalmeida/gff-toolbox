@@ -10,7 +10,7 @@ attributes column of the GFF.
 usage:
     gff-toolbox filter [-h|--help ]
     gff-toolbox filter [ --mode loose ] [ --input <gff> ] [ --pattern <string> --column <int> --sort --header ]
-    gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> --source <source_limits> --type <type_limits> ]
+    gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> --source <source_limits> --type <type_limits> --start=<start_position> --end=<end_position> --strand=<strand> ]
 
 options:
 
@@ -52,6 +52,12 @@ options:
                                                             This step works using the complete string (with full-matches) or substrings of the desired pattern,
                                                             working with partial-matches.
 
+    --strand=<strand>                                       Apply a filter based on the strand of the feature. Options: plus or minus. By default, everything is given.
+
+    --start=<start_position>                                Apply a filter to select features starting from this position.
+
+    --end=<end_position>                                    Apply a filter to select features until this position.
+
 
 example:
 
@@ -88,7 +94,7 @@ def read_gff_df(input):
 ######################################
 ### Function to import gff as dict ###
 ######################################
-def read_gff_dict(input, chr_limits, source_limits, type_limits):
+def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_pos, end_pos):
 
     # Check for the limits imposed by the user
     limit_info = {}
@@ -138,7 +144,41 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits):
         limit_info['gff_type'] = list(set(type_definitive))
 
     # Open GFF
-    return GFF.parse(open(input), limit_info=limit_info)
+    for rec in GFF.parse(open(input), limit_info=limit_info):
+
+        indexes = [] # Indexes to remove
+
+        # Remove features based on strand
+        ## Wants plus strand
+        if strand == "plus":
+            for index, f in enumerate(rec.features):
+                if int(f.location.strand) == -1:
+                    indexes.append(int(index))
+
+        ## Wants minus strand
+        if strand == "minus":
+            for index, f in enumerate(rec.features):
+                if int(f.location.strand) == 1:
+                    indexes.append(int(index))
+
+        # Remove features based on position
+        ## Min (start)
+        if start_pos != None:
+            for index, f in enumerate(rec.features):
+                if int(f.location.start) + 1 < int(start_pos): # Biopython is zero-based
+                    indexes.append(int(index))
+
+        ## Max (end)
+        if end_pos != None:
+            for index, f in enumerate(rec.features):
+                if int(f.location.end) > int(end_pos):
+                    indexes.append(int(index))
+
+        # Remove unwanted features
+        rec.features = [i for j, i in enumerate(rec.features) if j not in list(set(indexes))]
+
+    # Done
+    return rec
 
 
 ###################################
@@ -176,24 +216,19 @@ def filter_loose_mode(input_gff, column, pattern, sort, header):
 #######################################################
 ### Function for complex filter with single pattern ###
 #######################################################
-def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits):
+def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits, start_pos, end_pos, strand):
 
     # Parse fields
-    gff_dict = read_gff_dict(input=input_gff, chr_limits=chr_limits, source_limits=source_limits, type_limits=type_limits)
+    gff_dict = read_gff_dict(input=input_gff, chr_limits=chr_limits, source_limits=source_limits, type_limits=type_limits,
+                             strand=strand, start_pos=start_pos, end_pos=end_pos)
 
-    # Filter
-    for rec in gff_dict:
-        GFF.write([rec], sys.stdout) # Write filtered gff
-
-    # Check
-    #for rec in gff_dict:
-    #    for features in rec.features:
-    #        print(features)
+    # Print
+    GFF.write([gff_dict], sys.stdout) # Write filtered gff
 
 ################
 ### Def main ###
 ################
-def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_limits, type_limits):
+def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_limits, type_limits, start_pos, end_pos, strand):
 
     # Simple filter
     if mode == "loose":
@@ -201,7 +236,8 @@ def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_li
 
     # Complex filter
     elif mode == "exact":
-        filter_exact_mode(input_gff=input_gff, chr_limits=chr_limits, source_limits=source_limits, type_limits=type_limits)
+        filter_exact_mode(input_gff=input_gff, chr_limits=chr_limits, source_limits=source_limits, type_limits=type_limits,
+                          start_pos=start_pos, end_pos=end_pos, strand=strand)
 
     # Error
     else:

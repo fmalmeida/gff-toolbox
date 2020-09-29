@@ -89,7 +89,8 @@ def main():
                    pattern=args_filter['--pattern'], sort=args_filter['--sort'],
                    header=args_filter['--header'], mode=args_filter['--mode'],
                    chr_limits=args_filter['--chr'], source_limits=args_filter['--source'],
-                   type_limits=args_filter['--type'])
+                   type_limits=args_filter['--type'], start_pos=args_filter['--start'],
+                   end_pos=args_filter['--end'], strand=args_filter['--strand'])
 
         else:
             print(usage_filter.strip())
