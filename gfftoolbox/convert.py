@@ -91,8 +91,10 @@ def gff2json(filename):
 
             final.append(gff_dict)
 
-    data = json.loads(final)
-    json.dump(data, sys.stdout, indent=4)
+    # json.dump(final, sys.stdout, indent=4)
+    final = json.dumps(final, indent=4) # Converts to string
+    final = final.replace("[", "{").replace("]", "}")
+    print(final)
 
 ################
 ### Def main ###
