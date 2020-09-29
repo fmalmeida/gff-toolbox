@@ -8,15 +8,17 @@ This command uses several python libraries to provide an easy way to convert you
 
 usage:
     gff-toolbox convert [ -h|--help ]
-    gff-toolbox convert [ --input <gff> --format <out_format> ]
+    gff-toolbox convert [ --input <gff> --format <out_format> --id <field_identifier> ]
 
 options:
     -h --help                                               Show this screen
     -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it.
     -f, --format=<out_format>                               Convert to which format? Options: json
+    --id=<field_identifier>                                 Field name of the attribute in the 9th column to get feature IDs/names from. [Default: ID]
 
 example:
-    gff-toolbox convert -i test/input.gff -f json
+
+$ gff-toolbox convert -i test/input.gff -f json
 """
 
 ##################################
@@ -53,10 +55,9 @@ def att_to_dict(attributes):
 #######################
 ### Convert to JSON ###
 #######################
-def gff2json(filename):
+def gff2json(filename, identifier):
 
     gff_dict = {} # Initialize gff as dict
-    final    = [] # Final list for JSON
 
     openFunc = gzip.open if filename.endswith(".gz") else open # Parse with transparent decompression
 
@@ -64,9 +65,9 @@ def gff2json(filename):
         for line in infile:
             if line.startswith("#"): continue
             parts = line.strip().split("\t")
-            #If this fails, the file format is not standard-compatible
+            # If this fails, the file format is not standard-compatible
             assert len(parts) == len(gff_cols)
-            #Separate Values
+            # Separate Values
             seq        = parts[0]
             source     = parts[1]
             feature    = parts[2]
@@ -76,8 +77,7 @@ def gff2json(filename):
             strand     = parts[6]
             phase      = parts[7]
             attributes = att_to_dict(parts[8])
-            gff_dict = {
-                # "CDS" : attributes[0],
+            gff_dict[attributes[identifier]] = {
                 "seqid"     : seq,
                 "source"    : source,
                 "type"      : feature,
@@ -89,17 +89,15 @@ def gff2json(filename):
                 "attributes": attributes
             }
 
-            final.append(gff_dict)
-
-    json.dump(final, sys.stdout, indent=2)
+    json.dump(gff_dict, sys.stdout, indent=4)
 
 ################
 ### Def main ###
 ################
-def convert(filename, format):
+def convert(filename, format, identifier):
 
     if format == "json" :
-        gff2json(filename=filename)
+        gff2json(filename=filename, identifier=identifier)
 
     else:
         print(f"""
