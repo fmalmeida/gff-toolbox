@@ -73,6 +73,8 @@ import sys
 import pandas as pd
 import re
 from BCBio import GFF
+from BCBio.GFF import GFFExaminer
+import subprocess
 
 ####################################
 ### Function to import gff as df ###
@@ -96,36 +98,47 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits):
         chr_list = list(chr_limits.split(','))
         limit_info['gff_id'] = chr_list
 
+    # Customisable limits
+    ## Module
+    examiner = GFFExaminer()
+
+    ## Open connections
+    summary = examiner.available_limits(open(input))
+    gff_sources = []
+    gff_types = []
+
+    ## Get sources
+    for keys in summary['gff_source'].keys():
+        key = str(keys).replace("('", "").replace("',)", "")
+        gff_sources.append(key)
+
+    ## Get types
+    for keys in summary['gff_type'].keys():
+        key = str(keys).replace("('", "").replace("',)", "")
+        gff_types.append(key)
+
     # Source limits?
     if source_limits != None:
+        src_definitive  = [] # The real patterns in the GFF
         src_list = list(source_limits.split(',')) # Patterns given by user
-        src_definitive = [] # The real patterns in the GFF
+        for source in gff_sources:
+            if bool(re.search('|'.join(src_list), str(source))): # Check wheter the pattern given by user is present in the GFF
+                src_definitive.append(str(source)) # Select the real pattern that have the pattern given by user, for biopython dict
 
-        for rec in GFF.parse(input):
-            for f in rec.features:
-                source = str(f.qualifiers['source'][0])
-                if bool(re.search('|'.join(src_list), str(source))): # Check wheter the pattern given by user is present in the GFF
-                    src_definitive.append(str(source)) # Select the real pattern that have the pattern given by user, for biopython dict
-
-        limit_info['gff_source'] = list(set(src_definitive))
+            limit_info['gff_source'] = list(set(src_definitive))
 
     # Type limits?
     if type_limits != None:
-        type_list = list(type_limits.split(',')) # Patterns given by user
         type_definitive = [] # The real patterns in the GFF
-
-        for rec in GFF.parse(input):
-            for f in rec.features:
-                type = str(f.type)
-                if bool(re.search('|'.join(type_list), str(type))): # Check wheter the pattern given by user is present in the GFF
-                    type_definitive.append(str(type)) # Select the real pattern that have the pattern given by user, for biopython dict
+        type_list = list(type_limits.split(',')) # Patterns given by user
+        for type in gff_types:
+            if bool(re.search('|'.join(type_list), str(type))): # Check wheter the pattern given by user is present in the GFF
+                type_definitive.append(str(type)) # Select the real pattern that have the pattern given by user, for biopython dict
 
         limit_info['gff_type'] = list(set(type_definitive))
 
     # Open GFF
-    in_handle = open(input)
-    return GFF.parse(in_handle, limit_info=limit_info)
-    in_handle.close()
+    return GFF.parse(open(input), limit_info=limit_info)
 
 
 ###################################
@@ -170,7 +183,7 @@ def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits):
 
     # Filter
     for rec in gff_dict:
-        GFF.write([rec], sys.stdout)
+        GFF.write([rec], sys.stdout) # Write filtered gff
 
     # Check
     #for rec in gff_dict:

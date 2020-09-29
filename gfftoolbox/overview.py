@@ -37,7 +37,6 @@ def check_gff(infile):
     examiner = GFFExaminer()
 
     ## Open connection
-    gff = GFF.parse(infile)
     in_handle = open(in_file)
     summary = examiner.available_limits(in_handle)
     in_handle.close()
@@ -53,15 +52,14 @@ Input: {infile} gff file.
 Overview:
     """)
     pprint(summary)
-    print("""
-Attributes:
-
-Note: Showing the available qualifiers and attributes found in the the first record of the GFF. These
-qualifiers can be used in the other commands of the toolbox for filtering, plotting, etc. The qualifiers
-are the fields separated by ';' found in the GFF attributes column (9th column).
-    """)
-
-    # Check qualifiers
-    for rec in gff:
-        print(rec.features[0])
-        exit()
+#     print("""
+# Attributes:
+#
+# Note: Showing the available qualifiers and attributes found in the the first record of the GFF. These
+# qualifiers can be used in the other commands of the toolbox for filtering, plotting, etc.
+#     """)
+#
+#     # Check qualifiers
+#     for rec in GFF.parse(infile):
+#         print(rec.features[0])
+#         exit()
