@@ -12,7 +12,7 @@ usage:
 
 options:
     -h --help                                               Show this screen
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it.
+    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it. [Default: stdin]
     -f, --format=<out_format>                               Convert to which format? Options: json
 
 example:
@@ -60,36 +60,41 @@ def gff2json(filename):
 
     openFunc = gzip.open if filename.endswith(".gz") else open # Parse with transparent decompression
 
-    with openFunc(filename) as infile:
-        for line in infile:
-            if line.startswith("#"): continue
-            parts = line.strip().split("\t")
-            #If this fails, the file format is not standard-compatible
-            assert len(parts) == len(gff_cols)
-            #Separate Values
-            seq        = parts[0]
-            source     = parts[1]
-            feature    = parts[2]
-            start      = parts[3]
-            end        = parts[4]
-            score      = parts[5]
-            strand     = parts[6]
-            phase      = parts[7]
-            attributes = att_to_dict(parts[8])
-            gff_dict = {
-                # "CDS" : attributes[0],
-                "seqid"     : seq,
-                "source"    : source,
-                "type"      : feature,
-                "start"     : start,
-                "end"       : end,
-                "score"     : score,
-                "strand"    : strand,
-                "phase"     : phase,
-                "attributes": attributes
-            }
+    # Check if is stdin
+    if filename == "stdin":
+        contents = sys.stdin
+    else:
+        contents = openFunc(filename)
 
-            final.append(gff_dict)
+    for line in contents:
+        if line.startswith("#"): continue
+        parts = line.strip().split("\t")
+        #If this fails, the file format is not standard-compatible
+        assert len(parts) == len(gff_cols)
+        #Separate Values
+        seq        = parts[0]
+        source     = parts[1]
+        feature    = parts[2]
+        start      = parts[3]
+        end        = parts[4]
+        score      = parts[5]
+        strand     = parts[6]
+        phase      = parts[7]
+        attributes = att_to_dict(parts[8])
+        gff_dict = {
+            # "CDS" : attributes[0],
+            "seqid"     : seq,
+            "source"    : source,
+            "type"      : feature,
+            "start"     : start,
+            "end"       : end,
+            "score"     : score,
+            "strand"    : strand,
+            "phase"     : phase,
+            "attributes": attributes
+        }
+
+        final.append(gff_dict)
 
     # json.dump(final, sys.stdout, indent=4)
     final = json.dumps(final, indent=4) # Converts to string
