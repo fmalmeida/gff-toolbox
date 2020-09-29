@@ -10,7 +10,7 @@ attributes column of the GFF.
 usage:
     gff-toolbox filter [-h|--help ]
     gff-toolbox filter [ --mode loose ] [ --input <gff> ] [ --pattern <string> --column <int> --sort --header ]
-    gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> --source <source_limits> ]
+    gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> --source <source_limits> --type <type_limits> ]
 
 options:
 
@@ -41,8 +41,16 @@ options:
                                                 Exact search mode parameters
 
     --chr=<chr_limits>                                      Apply a filter based on the chr/contig/sequence ids (Column 1). Can be a list of patterns separated by commas.
+                                                            This step only works using the complete string for full-matches (it does not work with partial-matches based
+                                                            subsetrings of the desired pattern).
 
     --source=<source_limits>                                Apply a filter based on the source column (Column 2). Can be a list of patterns separated by commas.
+                                                            This step works using the complete string (with full-matches) or substrings of the desired pattern,
+                                                            working with partial-matches.
+
+    --type=<type_limits>                                    Apply a filter based on the type column (Column 3). Can be a list of patterns separated by commas.
+                                                            This step works using the complete string (with full-matches) or substrings of the desired pattern,
+                                                            working with partial-matches.
 
 
 example:
@@ -51,9 +59,11 @@ example:
 
 $ gff-toolbox filter --mode loose --sort --header -i test/input.gff -c 2 -p "barrnap:0.9"
 
-    ## Explain
+    ## In the example below, we filter the GFF in a complex manner:
+    ## All the features found in the sequences named contig_6_segment0 and contig_7_segment0 that
+    ## have CARD and/or Prodigal in their second column (sources) and are classified as CDS.
 
-$ gff-toolbox filter -i test/input.gff --chr contig_7_segment0
+$ gff-toolbox filter -i test/input.gff --chr contig_6_segment0,contig_7_segment0 --source CARD,Prodigal --type CDS
 """
 
 ##################################
@@ -76,7 +86,7 @@ def read_gff_df(input):
 ######################################
 ### Function to import gff as dict ###
 ######################################
-def read_gff_dict(input, chr_limits):
+def read_gff_dict(input, chr_limits, source_limits, type_limits):
 
     # Check for the limits imposed by the user
     limit_info = {}
@@ -86,6 +96,33 @@ def read_gff_dict(input, chr_limits):
         chr_list = list(chr_limits.split(','))
         limit_info['gff_id'] = chr_list
 
+    # Source limits?
+    if source_limits != None:
+        src_list = list(source_limits.split(',')) # Patterns given by user
+        src_definitive = [] # The real patterns in the GFF
+
+        for rec in GFF.parse(input):
+            for f in rec.features:
+                source = str(f.qualifiers['source'][0])
+                if bool(re.search('|'.join(src_list), str(source))): # Check wheter the pattern given by user is present in the GFF
+                    src_definitive.append(str(source)) # Select the real pattern that have the pattern given by user, for biopython dict
+
+        limit_info['gff_source'] = list(set(src_definitive))
+
+    # Type limits?
+    if type_limits != None:
+        type_list = list(type_limits.split(',')) # Patterns given by user
+        type_definitive = [] # The real patterns in the GFF
+
+        for rec in GFF.parse(input):
+            for f in rec.features:
+                type = str(f.type)
+                if bool(re.search('|'.join(type_list), str(type))): # Check wheter the pattern given by user is present in the GFF
+                    type_definitive.append(str(type)) # Select the real pattern that have the pattern given by user, for biopython dict
+
+        limit_info['gff_type'] = list(set(type_definitive))
+
+    # Open GFF
     in_handle = open(input)
     return GFF.parse(in_handle, limit_info=limit_info)
     in_handle.close()
@@ -126,24 +163,24 @@ def filter_loose_mode(input_gff, column, pattern, sort, header):
 #######################################################
 ### Function for complex filter with single pattern ###
 #######################################################
-def filter_exact_mode(input_gff, chr_limits):
+def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits):
 
     # Parse fields
-    gff_dict = read_gff_dict(input=input_gff, chr_limits=chr_limits)
+    gff_dict = read_gff_dict(input=input_gff, chr_limits=chr_limits, source_limits=source_limits, type_limits=type_limits)
 
     # Filter
     for rec in gff_dict:
         GFF.write([rec], sys.stdout)
 
     # Check
-    for rec in gff_dict:
-        for features in rec.features:
-            print(features)
+    #for rec in gff_dict:
+    #    for features in rec.features:
+    #        print(features)
 
 ################
 ### Def main ###
 ################
-def filter(input_gff, column, pattern, sort, header, mode, chr_limits):
+def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_limits, type_limits):
 
     # Simple filter
     if mode == "loose":
@@ -151,7 +188,7 @@ def filter(input_gff, column, pattern, sort, header, mode, chr_limits):
 
     # Complex filter
     elif mode == "exact":
-        filter_exact_mode(input_gff=input_gff, chr_limits=chr_limits)
+        filter_exact_mode(input_gff=input_gff, chr_limits=chr_limits, source_limits=source_limits, type_limits=type_limits)
 
     # Error
     else:

@@ -88,7 +88,8 @@ def main():
             filter(input_gff=args_filter['--input'], column=args_filter['--column'],
                    pattern=args_filter['--pattern'], sort=args_filter['--sort'],
                    header=args_filter['--header'], mode=args_filter['--mode'],
-                   chr_limits=args_filter['--chr'])
+                   chr_limits=args_filter['--chr'], source_limits=args_filter['--source'],
+                   type_limits=args_filter['--type'])
 
         else:
             print(usage_filter.strip())
