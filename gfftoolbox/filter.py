@@ -104,7 +104,7 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
         chr_list = list(chr_limits.split(','))
         limit_info['gff_id'] = chr_list
 
-    # Customisable limits
+    # GFF limits
     ## Module
     examiner = GFFExaminer()
 
@@ -143,7 +143,7 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
 
         limit_info['gff_type'] = list(set(type_definitive))
 
-    # Open GFF
+    # Open GFF for more customisable / exact filters
     for rec in GFF.parse(open(input), limit_info=limit_info):
 
         indexes = [] # Indexes to remove
