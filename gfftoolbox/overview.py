@@ -11,7 +11,7 @@ usage:
 
 options:
     -h --help                                               Show this screen
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it
+    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it. [Default: stdin]
 
 example:
     gff-toolbox overview -i input.gff
@@ -24,20 +24,29 @@ import Bio.SeqIO
 from pprintpp import pprint
 from BCBio import GFF
 from BCBio.GFF import GFFExaminer
+import tempfile
+import sys
 
 ##################################################
 ### Function for checking available qualifiers ###
 ##################################################
 def check_gff(infile):
 
-    ## File
-    in_file = infile
+    # Checking for stdin
+    if infile == "stdin":
+        tmp = tempfile.NamedTemporaryFile(mode = "w+t") # Create tmp file to work as input
+        temp_file = open(tmp.name, 'w')
+        for line in sys.stdin:
+            temp_file.writelines(f"{line}")
+
+        temp_file.seek(0)
+        infile = tmp.name
 
     ## Module
     examiner = GFFExaminer()
 
     ## Open connection
-    in_handle = open(in_file)
+    in_handle = open(infile)
     summary = examiner.available_limits(in_handle)
     in_handle.close()
 

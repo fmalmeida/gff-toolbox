@@ -18,7 +18,7 @@ options:
 
     -h --help                                               Show this screen.
 
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences, only features.
+    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences, only features. [Default: stdin]
 
     -m, --mode=<search_mode>                                In which mode to search for patterns: loose or exact? In loose mode,
                                                             the GFF is scanned in a grep-like manner via pandas dataframes in which
@@ -92,6 +92,7 @@ import re
 from BCBio import GFF
 from BCBio.GFF import GFFExaminer
 import subprocess
+import tempfile
 
 ####################################
 ### Function to import gff as df ###
@@ -263,6 +264,16 @@ def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits, start_p
 ### Def main ###
 ################
 def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_limits, type_limits, start_pos, end_pos, strand, att_file):
+
+    # Checking for stdin
+    if input_gff == "stdin":
+        tmp = tempfile.NamedTemporaryFile(mode = "w+t") # Create tmp file to work as input
+        temp_file = open(tmp.name, 'w')
+        for line in sys.stdin:
+            temp_file.writelines(f"{line}")
+
+        temp_file.seek(0)
+        input_gff = tmp.name
 
     # Simple filter
     if mode == "loose":
