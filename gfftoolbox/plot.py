@@ -57,7 +57,7 @@ example:
     ## contig_1_segment0 sequence. Without much customization. Giving a custom label for the
     ## genes to appear in the legend and giving a different legend title.
 
-$ gff-toolbox -i test/input.gff --contig contig_1_segment0 --feature CDS,rRNA --start 1 --end 10000 -l "Generic features (CDS and rRNAs)" -t "Kp annotation"
+$ gff-toolbox plot -i test/input.gff --contig contig_1_segment0 --feature CDS,rRNA --start 1 --end 10000 -l "Generic features (CDS and rRNAs)" -t "Kp annotation"
 """
 
 ##################################
