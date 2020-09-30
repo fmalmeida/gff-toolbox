@@ -16,7 +16,10 @@ options:
     -f, --format=<out_format>                               Convert to which format? Options: json
 
 example:
-    gff-toolbox convert -i test/input.gff -f json
+
+    ## Converting a GFF to JSON
+
+$ gff-toolbox convert -i test/input.gff -f json
 """
 
 ##################################

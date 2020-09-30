@@ -5,3 +5,4 @@ pprintpp
 bcbio-gff
 matplotlib
 pandas
+dna_features_viewer

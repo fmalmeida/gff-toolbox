@@ -32,6 +32,7 @@ commands:
     overview                                                Useful to get the gist of your GFF file
     filter                                                  It lets you filter your GFF based on one or multiple patterns
     convert                                                 Converts a GFF file into another formats
+    plot                                                    Useful command to plot genomic regions from a GFF file
 
 Use: `gff-toolbox <commmand> -h` to get more help and see examples.
 """
@@ -50,6 +51,7 @@ from .overview import *
 from .filter import *
 from .version import *
 from .convert import *
+from .plot import *
 
 ## Defining main
 def main():
@@ -98,9 +100,9 @@ def main():
         else:
             print(usage_filter.strip())
 
-    ##########################
-    ### GFF filter command ###
-    ##########################
+    ###########################
+    ### GFF convert command ###
+    ###########################
     elif arguments['<command>'] == 'convert':
 
         # Parse docopt
@@ -114,7 +116,41 @@ def main():
             convert(filename=args_convert['--input'], format=args_convert['--format'])
 
         else:
-            print(args_convert.strip())
+            print(usage_convert.strip())
+
+    ########################
+    ### GFF plot command ###
+    ########################
+    elif arguments['<command>'] == 'plot':
+
+        # Parse docopt
+        args_plot = docopt(usage_plot, version=__version__, help=False)
+
+        ## Check GFF
+        if args_plot['check-gff'] and args_plot['--input']:
+            check_gff(args_plot['--input'])
+
+        ## Single GFF
+        if args_plot['--input'] and args_plot['--start'] and args_plot['--end'] and args_plot['--contig']:
+            print("Executing the pipeline for a single GFF input")
+            single_gff(infile=args_plot['--input'], start=args_plot['--start'], end=args_plot['--end'],
+                       contig=args_plot['--contig'], feature=args_plot['--feature'], coloring=args_plot['--color'],
+                       custom_label=args_plot['--label'], outfile=args_plot['--output'], plot_title=args_plot['--title'],
+                       qualifier=args_plot['--identification'], plot_width=args_plot['--width'], plot_height=args_plot['--height'])
+            print("Done, checkout the results in {}".format(args_plot['--output']))
+
+        ## Multiple GFFs
+        elif args_plot['--fofn'] and args_plot['--start'] and args_plot['--end'] and args_plot['--contig']:
+            print("Executing the pipeline for multiple GFF inputs")
+            multiple_gff(input_fofn=args_plot['--fofn'], start=args_plot['--start'], end=args_plot['--end'],
+                         contig=args_plot['--contig'], feature=args_plot['--feature'], outfile=args_plot['--output'],
+                         qualifier=args_plot['--identification'], plot_title=args_plot['--title'],
+                         plot_width=args_plot['--width'], plot_height=args_plot['--height'])
+            print("Done, checkout the results in {}".format(args_plot['--output']))
+
+        ## None
+        else:
+            print(usage_plot.strip())
 
     #####################
     ### Check license ###

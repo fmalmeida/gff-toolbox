@@ -14,7 +14,10 @@ options:
     -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it. [Default: stdin]
 
 example:
-    gff-toolbox overview -i input.gff
+
+    ## Getting the overview of a generic GFF file
+    
+$ gff-toolbox overview -i input.gff
 """
 
 ##################################
