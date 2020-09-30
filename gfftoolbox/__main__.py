@@ -92,7 +92,8 @@ def main():
                    header=args_filter['--header'], mode=args_filter['--mode'],
                    chr_limits=args_filter['--chr'], source_limits=args_filter['--source'],
                    type_limits=args_filter['--type'], start_pos=args_filter['--start'],
-                   end_pos=args_filter['--end'], strand=args_filter['--strand'])
+                   end_pos=args_filter['--end'], strand=args_filter['--strand'],
+                   att_file=args_filter['--attributes'])
 
         else:
             print(usage_filter.strip())

@@ -10,7 +10,7 @@ attributes column of the GFF.
 usage:
     gff-toolbox filter [-h|--help ]
     gff-toolbox filter [ --mode loose ] [ --input <gff> ] [ --pattern <string> --column <int> --sort --header ]
-    gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> --source <source_limits> --type <type_limits> --start=<start_position> --end=<end_position> --strand=<strand> ]
+    gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> --source <source_limits> --type <type_limits> --start <start_position> --end <end_position> --strand <strand> --attributes <file_with_attributes> ]
 
 options:
 
@@ -58,6 +58,10 @@ options:
 
     --end=<end_position>                                    Apply a filter to select features until this position.
 
+    --attributes=<file_with_attributes>                     Pass a file containing the desired values to filter in the attributes column.
+                                                            The key/field to search in the 9th column is given in a header-like manner
+                                                            with the desired values following it. Checkout the file in test directory.
+
 
 example:
 
@@ -70,6 +74,13 @@ $ gff-toolbox filter --mode loose --sort --header -i test/input.gff -c 2 -p "bar
     ## have CARD and/or Prodigal in their second column (sources) and are classified as CDS.
 
 $ gff-toolbox filter -i test/input.gff --chr contig_6_segment0,contig_7_segment0 --source CARD,Prodigal --type CDS
+
+    ## An example using a file containing the desired attributes that a feature must contain
+    ## to be printed. Attribute keys are set in lines starting with '##' following by the key name
+    ## e.g. ##ID. The lines following it are the values that these keys may have in GFF file in order
+    ## to be printed. Check the atts.txt file in the test directory to understand it better.
+
+$ gff-toolbox filter -i test/input.gff --attributes test/atts.txt
 """
 
 ##################################
@@ -94,7 +105,7 @@ def read_gff_df(input):
 ######################################
 ### Function to import gff as dict ###
 ######################################
-def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_pos, end_pos):
+def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_pos, end_pos, att_file):
 
     # Check for the limits imposed by the user
     limit_info = {}
@@ -144,6 +155,7 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
         limit_info['gff_type'] = list(set(type_definitive))
 
     # Open GFF for more customisable / exact filters
+    records = []
     for rec in GFF.parse(open(input), limit_info=limit_info):
 
         indexes = [] # Indexes to remove
@@ -174,11 +186,31 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
                 if int(f.location.end) > int(end_pos):
                     indexes.append(int(index))
 
+        ## Remove features based on attributes
+        if att_file != None:
+            att_filter = {} # Store data from file
+            for line in open(att_file, "r"):
+                line = line.strip()
+                if line.startswith("#"): # Is a header?
+                    key = line.replace("##", "")
+                    att_filter[key] = []
+                else:
+                    att_filter[key].append(line)
+
+            # Parse GFF based on file data
+            for field in att_filter:
+                for index, f in enumerate(rec.features):
+                    if f.qualifiers[field][0] not in list(set(att_filter[field])):
+                        indexes.append(int(index))
+
         # Remove unwanted features
         rec.features = [i for j, i in enumerate(rec.features) if j not in list(set(indexes))]
 
+        # Save by appending
+        records.append(rec)
+
     # Done
-    return rec
+    return records
 
 
 ###################################
@@ -216,19 +248,21 @@ def filter_loose_mode(input_gff, column, pattern, sort, header):
 #######################################################
 ### Function for complex filter with single pattern ###
 #######################################################
-def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits, start_pos, end_pos, strand):
+def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits, start_pos, end_pos, strand, att_file):
 
     # Parse fields
     gff_dict = read_gff_dict(input=input_gff, chr_limits=chr_limits, source_limits=source_limits, type_limits=type_limits,
-                             strand=strand, start_pos=start_pos, end_pos=end_pos)
+                             strand=strand, start_pos=start_pos, end_pos=end_pos, att_file=att_file)
 
-    # Print
-    GFF.write([gff_dict], sys.stdout) # Write filtered gff
+    # Print the records filtered (each record is a sequence)
+    for record in gff_dict:
+        if len(record.features) > 0:
+            GFF.write([record], sys.stdout) # Write filtered gff
 
 ################
 ### Def main ###
 ################
-def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_limits, type_limits, start_pos, end_pos, strand):
+def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_limits, type_limits, start_pos, end_pos, strand, att_file):
 
     # Simple filter
     if mode == "loose":
@@ -237,7 +271,7 @@ def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_li
     # Complex filter
     elif mode == "exact":
         filter_exact_mode(input_gff=input_gff, chr_limits=chr_limits, source_limits=source_limits, type_limits=type_limits,
-                          start_pos=start_pos, end_pos=end_pos, strand=strand)
+                          start_pos=start_pos, end_pos=end_pos, strand=strand, att_file=att_file)
 
     # Error
     else:

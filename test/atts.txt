@@ -1,0 +1,7 @@
+##ID
+BNHFPCLP_04806
+BNHFPCLP_04807
+##product
+23S ribosomal RNA
+16S ribosomal RNA
+5S ribosomal RNA
