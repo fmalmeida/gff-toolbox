@@ -16,8 +16,8 @@ options:
 example:
 
     ## Getting the overview of a generic GFF file
-    
-$ gff-toolbox overview -i input.gff
+
+$ gff-toolbox overview -i TAIR9_GFF3_genes.gff
 """
 
 ##################################
@@ -33,7 +33,7 @@ import sys
 ##################################################
 ### Function for checking available qualifiers ###
 ##################################################
-def check_gff(infile):
+def overview(infile):
 
     # Checking for stdin
     if infile == "stdin":
@@ -64,14 +64,3 @@ Input: {infile} gff file.
 Overview:
     """)
     pprint(summary)
-#     print("""
-# Attributes:
-#
-# Note: Showing the available qualifiers and attributes found in the the first record of the GFF. These
-# qualifiers can be used in the other commands of the toolbox for filtering, plotting, etc.
-#     """)
-#
-#     # Check qualifiers
-#     for rec in GFF.parse(infile):
-#         print(rec.features[0])
-#         exit()

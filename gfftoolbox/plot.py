@@ -34,7 +34,8 @@ options:
     --contig=<contig_name>                  Name of the contig which you want to plot.
 
     --identification=<id>                   Which GFF qualifier must be used as gene identification to write in the plot?
-                                            Please check for available qualifiers with 'check-gff'. [Default: ID].
+                                            Please check for available qualifiers with 'check-gff'. Must be the exact name
+                                            of the key found in the attributes columns. [Default: ID].
 
     -t, --title=<title>                     Legend/plot title. [Default: Gene Plot].
 
@@ -53,11 +54,22 @@ options:
 
 example:
 
-    ## Plotting CDS and/or rRNA features found inside the region between base 1 and 1000 from
+    ## Plotting CDS and/or rRNA features found inside the region between base 1 and 10000 from
     ## contig_1_segment0 sequence. Without much customization. Giving a custom label for the
     ## genes to appear in the legend and giving a different legend title.
 
-$ gff-toolbox plot -i test/input.gff --contig contig_1_segment0 --feature CDS,rRNA --start 1 --end 10000 -l "Generic features (CDS and rRNAs)" -t "Kp annotation"
+$ gff-toolbox plot -i input.gff --contig contig_1_segment0 --feature CDS,rRNA --start 1 --end 10000 -l "Generic features (CDS and rRNAs)" -t "Kp annotation"
+
+    ## Plotting CDS, rRNA and tRNA features with different colors. Setting the genomic region
+    ## in contig_1_segment0:1-10000. Checkout the example fofn file to understand it better.
+
+$ gff-toolbox plot -f input_example_for_plot.fofn --start 1 --end 10000 --contig contig_1_segment0 -t "Kp annotation" --feature CDS,rRNA,tRNA
+
+    ## Same as above.
+    ## This time, instead of plotting gene names we plot the gene products by setting the
+    ## parameter --identification to the exact name of the key in the attributes column.
+
+$ gff-toolbox plot -f input_example_for_plot.fofn --start 1 --end 10000 --contig contig_1_segment0 -t "Kp annotation" --feature CDS,rRNA,tRNA --identification product
 """
 
 ##################################

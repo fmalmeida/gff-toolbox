@@ -19,7 +19,7 @@ example:
 
     ## Converting a GFF to JSON
 
-$ gff-toolbox convert -i test/input.gff -f json
+$ gff-toolbox convert -i input.gff -f json
 """
 
 ##################################

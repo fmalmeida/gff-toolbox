@@ -30,7 +30,7 @@ options:
 
                                                 Loose search mode parameters
 
-    -c, --column=<int>                                      Apply pattern search in which GFF columns? [Default: 9]
+    -c, --column=<int>                                      Apply pattern search in which GFF columns?. [Default: 9]
 
     -p, --pattern=<string>                                  Pattern to search in the GFF file. Can be a list of patterns separated by commas.
 
@@ -66,21 +66,32 @@ options:
 example:
 
     ## Simple filter in any column: wheter a line contain a pattern in a specific column (like grep)
+    ## Check the features that have the word "putative" in their attributes.
 
-$ gff-toolbox filter --mode loose --sort --header -i test/input.gff -c 2 -p "barrnap:0.9"
+$ gff-toolbox filter --mode loose --sort --header -i Kp_ref.gff -p "putative"
 
-    ## In the example below, we filter the GFF in a complex manner:
-    ## All the features found in the sequences named contig_6_segment0 and contig_7_segment0 that
-    ## have CARD and/or Prodigal in their second column (sources) and are classified as CDS.
+    ## In the example below, we filter the GFF in a more complex manner:
+    ## All the CDS(s) found in the sequence named NC_016845.1 that
+    ## have the word "transcriptional regulator" in their attributes.
+    ##
+    ## It works in both ways:
 
-$ gff-toolbox filter -i test/input.gff --chr contig_6_segment0,contig_7_segment0 --source CARD,Prodigal --type CDS
+$ gff-toolbox filter -i Kp_ref.gff --chr NC_016845.1 --type CDS | gff-toolbox filter --mode loose -p "transcriptional regulator"
+$ gff-toolbox filter --mode loose -i Kp_ref.gff -p "transcriptional regulator" | gff-toolbox filter --chr NC_016845.1 --type CDS
 
     ## An example using a file containing the desired attributes that a feature must contain
     ## to be printed. Attribute keys are set in lines starting with '##' following by the key name
     ## e.g. ##ID. The lines following it are the values that these keys may have in GFF file in order
     ## to be printed. Check the atts.txt file in the test directory to understand it better.
+    ##
+    ## In the example we filter by the product key value found in the attributes column.
 
-$ gff-toolbox filter -i test/input.gff --attributes test/atts.txt
+$ gff-toolbox filter -i Kp_ref.gff --attributes atts.txt
+
+    ## Filtering a set of genes and its childs using a file containing the desired attributes.
+    ## A. thaliana annotation.
+
+$ gff-toolbox filter -i TAIR9_GFF3_genes.gff --attributes atts2.txt
 """
 
 ##################################
@@ -102,6 +113,17 @@ def read_gff_df(input):
                         names=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
 
 # Guide: ['Chr', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes'
+
+#####################################################
+### Function to check common member between lists ###
+#####################################################
+def common_member(a, b):
+    a_set = set(a)
+    b_set = set(b)
+    if (a_set & b_set):
+        return True
+    else:
+        return False
 
 ######################################
 ### Function to import gff as dict ###
@@ -159,32 +181,32 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
     records = []
     for rec in GFF.parse(open(input), limit_info=limit_info):
 
-        indexes = [] # Indexes to remove
+        indexes = [] # Indexes to maintain
 
         # Remove features based on strand
         ## Wants plus strand
         if strand == "plus":
             for index, f in enumerate(rec.features):
-                if int(f.location.strand) == -1:
+                if int(f.location.strand) == 1:
                     indexes.append(int(index))
 
         ## Wants minus strand
         if strand == "minus":
             for index, f in enumerate(rec.features):
-                if int(f.location.strand) == 1:
+                if int(f.location.strand) == -1:
                     indexes.append(int(index))
 
         # Remove features based on position
         ## Min (start)
         if start_pos != None:
             for index, f in enumerate(rec.features):
-                if int(f.location.start) + 1 < int(start_pos): # Biopython is zero-based
+                if int(f.location.start) + 1 >= int(start_pos): # Biopython is zero-based
                     indexes.append(int(index))
 
         ## Max (end)
         if end_pos != None:
             for index, f in enumerate(rec.features):
-                if int(f.location.end) > int(end_pos):
+                if int(f.location.end) <= int(end_pos):
                     indexes.append(int(index))
 
         ## Remove features based on attributes
@@ -200,12 +222,79 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
 
             # Parse GFF based on file data
             for field in att_filter:
-                for index, f in enumerate(rec.features):
-                    if f.qualifiers[field][0] not in list(set(att_filter[field])):
-                        indexes.append(int(index))
 
-        # Remove unwanted features
-        rec.features = [i for j, i in enumerate(rec.features) if j not in list(set(indexes))]
+                for index, f in enumerate(rec.features):
+
+                    #############################
+                    ### PARENT / MAIN feature ###
+                    #############################
+
+                    # Checking the value of the attribute key in the main feature
+                    try:
+                        if len(f.qualifiers[field]) > 0:
+                            if common_member(f.qualifiers[field], list(set(att_filter[field]))): # it matches
+                                indexes.append(int(index)) # Save this feature
+
+                    # Feature does not have this attribute key
+                    except:
+                        pass
+
+                    ###############################
+                    ### 1st level child feature ###
+                    ###############################
+                    sub_index_list    = []
+
+                    # Checking the value of the attribute key in the 1st level child feature
+                    try:
+                        # It has a child?
+                        for sub_index, sub in enumerate(f.sub_features):
+
+                            if len(sub.qualifiers[field]) > 0:
+                                if common_member(sub.qualifiers[field], list(set(att_filter[field]))): # it matches
+                                    indexes.append(int(index)) # Save the main feature
+                                    sub_index_list.append(int(sub_index)) # Save the subfeature
+
+                    # Feature does not have this attribute key
+                    except:
+                        pass
+
+                    ###############################
+                    ### 2nd level child feature ###
+                    ###############################
+                    subsub_index_list    = []
+
+                    # Checking the value of the attribute key in the 1st level child feature
+                    try:
+                        # It has a child?
+                        for sub_index, sub in enumerate(f.sub_features):
+                            for subsub_index, subsub in enumerate(sub.sub_features):
+                                if len(subsub.qualifiers[field]) > 0:
+                                    if common_member(subsub.qualifiers[field], list(set(att_filter[field]))): # it matches
+                                        indexes.append(int(index)) # Save the main feature
+                                        sub_index_list.append(int(sub_index)) # Save the subfeature
+                                        subsub_index_list.append(int(subsub_index)) # Save the subsubfeature
+
+                            #############################################################
+                            ### Clean list of 2nd level childs since we passed by all ###
+                            #############################################################
+                            sub.sub_features = [i for j, i in enumerate(sub.sub_features) if j in list(set(subsub_index_list))]
+
+                    # Feature does not have this attribute key
+                    except:
+                        pass
+
+                    # Even if it has more childs, I'll not go any further
+
+                    #############################################################
+                    ### Clean list of 1st level childs since we passed by all ###
+                    #############################################################
+                    f.sub_features = [i for j, i in enumerate(f.sub_features) if j in list(set(sub_index_list))]
+
+
+        ##########################################################
+        ### Clean list of main features since we passed by all ###
+        ##########################################################
+        rec.features = [i for j, i in enumerate(rec.features) if j in list(set(indexes))]
 
         # Save by appending
         records.append(rec)

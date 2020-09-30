@@ -71,7 +71,7 @@ def main():
             print(usage_overview.strip())
 
         elif args_overview['overview'] and args_overview['--input']:
-            check_gff(args_overview['--input'])
+            overview(args_overview['--input'])
 
         else:
             print(usage_overview.strip())
