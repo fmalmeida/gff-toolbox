@@ -10,7 +10,7 @@ usage:
     gff-toolbox overview [ -h|--help ] [ --input <gff> ]
 
 options:
-    -h --help                                               Show this screen
+    -h, --help                                               Show this screen
     -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it. [Default: stdin]
 
 example:

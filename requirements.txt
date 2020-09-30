@@ -5,4 +5,3 @@ pprintpp
 bcbio-gff
 matplotlib
 pandas
-gzip

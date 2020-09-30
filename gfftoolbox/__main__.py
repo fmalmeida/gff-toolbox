@@ -29,9 +29,9 @@ options:
     --license                                               Show LEGAL LICENSE information
 
 commands:
-    overview                                                This command is very useful to get the gist of your GFF file
-    filter                                                  This command lets you filter your GFF based on one or multiple patterns
-    convert                                                 This command enables that you convert a GFF file into another formats
+    overview                                                Useful to get the gist of your GFF file
+    filter                                                  It lets you filter your GFF based on one or multiple patterns
+    convert                                                 Converts a GFF file into another formats
 
 Use: `gff-toolbox <commmand> -h` to get more help and see examples.
 """
