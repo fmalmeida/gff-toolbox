@@ -9,7 +9,7 @@ gff-toolbox is a toolbox of commands that tries to facilitate the work with GFF 
 * [Requirements](https://github.com/fmalmeida/gff-toolbox#requirements)
 * [Installation](https://github.com/fmalmeida/gff-toolbox#installation)
 * [Documentation](https://github.com/fmalmeida/gff-toolbox#documentation)
-* [How you can colaborate?](https://github.com/fmalmeida/gff-toolbox#collaborating)
+* [How can you colaborate?](https://github.com/fmalmeida/gff-toolbox#collaborating)
 * [Citation](https://github.com/fmalmeida/gff-toolbox#citation)
 
 ## Requirements
