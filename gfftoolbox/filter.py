@@ -9,7 +9,7 @@ attributes column of the GFF.
 
 usage:
     gff-toolbox filter [-h|--help ]
-    gff-toolbox filter [ --mode loose ] [ --input <gff> ] [ --pattern <string> --column <int> --sort --header ]
+    gff-toolbox filter [ --mode loose ] [ --input <gff> ] [ --pattern <string> --column <int> --start <start_position> --end <end_position> --strand <strand> --sort --header ]
     gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> --source <source_limits> --type <type_limits> --start <start_position> --end <end_position> --strand <strand> --attributes <file_with_attributes> ]
 
 options:
@@ -20,29 +20,38 @@ options:
 
     -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences, only features. [Default: stdin]
 
-    -m, --mode=<search_mode>                                In which mode to search for patterns: loose or exact? In loose mode,
-                                                            the GFF is scanned in a grep-like manner via pandas dataframes in which
-                                                            user must specify a pattern and a column to do the search. This mode is
-                                                            recommended for simple searches with simple GFFs (not nested). The exact
-                                                            mode scans the GFF with Biopython and BCBio packages, treating it as
-                                                            python dictionary. It is recommended for more complex searches and complex
-                                                            GFFs, such as nested GFFs. [Default: exact]
+    -m, --mode=<search_mode>                                In which mode to search for patterns: loose or exact?
+                                                            The loose mode, scans the GFF in a grep-like manner via pandas dataframes in which the user must specify
+                                                            a pattern and a column to search it. Recommended for simple searches were nest structure is not a must.
+                                                            The exact mode scans the GFF with Biopython and BCBio packages, treating it as python dictionary. It is
+                                                            recommended for more complex searches and complex GFFs, such as nested GFFs. [Default: exact]
 
-                                                Loose search mode parameters
+    --strand=<strand>                                       Apply a filter based on the strand of the feature. Options: plus or minus. By default, everything is given.
+                                                            In exact mode, this filter is applied in the parent feature, if it passes, it's children are also printed.
+                                                            The contrary is also true. In the loose mode it is applied directly to all features, nested or not.
+
+    --start=<start_position>                                Apply a filter to select features starting from this position. In exact mode, this filter is applied in the
+                                                            parent feature, if it passes, it's children are also printed. The contrary is also true. In the loose mode
+                                                            it is applied directly to all features, nested or not.
+
+    --end=<end_position>                                    Apply a filter to select features until this position. In exact mode, this filter is applied in the parent
+                                                            feature, if it passes, it's children are also printed. The contrary is also true.
+
+                                                Loose search mode parameters (Handy in general cases)
 
     -c, --column=<int>                                      Apply pattern search in which GFF columns?. [Default: 9]
 
     -p, --pattern=<string>                                  Pattern to search in the GFF file. Can be a list of patterns separated by commas.
 
-    --sort                                                  Sort the GFF by the contig and start position.
+    --sort                                                  Sort the GFF by the contig and start position. Be aware, it can disorganize nested gffs.
 
     --header                                                Print GFF header (##gff-version 3)? Some programs require this header.
 
-                                                Exact search mode parameters
+                                                Exact search mode parameters (Very useful for nested GFFs)
 
     --chr=<chr_limits>                                      Apply a filter based on the chr/contig/sequence ids (Column 1). Can be a list of patterns separated by commas.
                                                             This step only works using the complete string for full-matches (it does not work with partial-matches based
-                                                            subsetrings of the desired pattern).
+                                                            substrings of the desired pattern).
 
     --source=<source_limits>                                Apply a filter based on the source column (Column 2). Can be a list of patterns separated by commas.
                                                             This step works using the complete string (with full-matches) or substrings of the desired pattern,
@@ -50,26 +59,16 @@ options:
 
     --type=<type_limits>                                    Apply a filter based on the type column (Column 3). Can be a list of patterns separated by commas.
                                                             This step works using the complete string (with full-matches) or substrings of the desired pattern,
-                                                            working with partial-matches.
+                                                            working with partial-matches. In the loose mode it is applied directly to all features, nested or not.
 
-    --strand=<strand>                                       Apply a filter based on the strand of the feature. Options: plus or minus. By default, everything is given.
+    --attributes=<file_with_attributes>                     Pass a file containing the desired key/value tuple to search in the 9th column. The header of the file is the
+                                                            attribute key in which to search for the values given in the following it. Since it maintains the nest and
+                                                            organization of the file, it is useful for filtering nested GFFs based on a list of genes, parents or products.
+                                                            The maintainence of the nest structure would be difficult to have with simpler commands such as `grep -f filep`
+                                                            since children and parents seldom have the same attribute keys.
 
-    --start=<start_position>                                Apply a filter to select features starting from this position.
+                                                            This file must a header starting with '##', whithout space and its values following it. E.g.:
 
-    --end=<end_position>                                    Apply a filter to select features until this position.
-
-    --attributes=<file_with_attributes>                     Pass a file containing the desired values to filter in the attributes column.
-                                                            The key/field to search in the 9th column is given in a header-like manner
-                                                            with the desired values following it. Checkout the file in test directory.
-                                                            In nested GFFs, it searches for the value in the field wanted until the second
-                                                            level of child features (children of the children).
-
-                                                            This file must have the attribute key as a header starting with '##' and its
-                                                            values in the following lines. E.g.:
-
-                                                                    ##product
-                                                                    desired product 1
-                                                                    desired product 2
                                                                     ##ID
                                                                     desired gene id 1
                                                                     desired gene id 2
@@ -98,9 +97,9 @@ $ gff-toolbox filter --mode loose -i Kp_ref.gff -p "transcriptional regulator" |
 $ gff-toolbox filter -i Kp_ref.gff --attributes atts.txt
 
     ## Filtering a set of genes and its childs using a file containing the desired attributes.
-    ## A. thaliana annotation.
+    ## A. thaliana annotation. Also give a custom start position for features to be printed?
 
-$ gff-toolbox filter -i TAIR9_GFF3_genes.gff --attributes atts2.txt
+$ gff-toolbox filter -i TAIR9_GFF3_genes.gff --attributes atts2.txt --start 5900
 """
 
 ##################################
@@ -132,11 +131,29 @@ class goChild(Error):
 ####################################
 ### Function to import gff as df ###
 ####################################
-def read_gff_df(input):
-    return pd.read_csv(input, sep = "\t", comment = "#",
-                        names=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+def read_gff_df(input, strand, start_pos, end_pos):
 
-# Guide: ['Chr', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes'
+    # Guide: ['Chr', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes'
+    df = pd.read_csv(input, sep = "\t", comment = "#", names=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+
+    ## Wants plus strand
+    if strand == "plus":
+        df = df[ df['7'] != "-" ]
+
+    ## Wants minus strand
+    elif strand == "minus":
+        df = df[ df['7'] != "+" ]
+
+    # Remove features based on position
+    ## Min (start)
+    if start_pos != None:
+        df = df [ df['4'] >= int(start_pos) ]
+
+    ## Max (end)
+    if end_pos != None:
+        df = df[ df['5'] <= int(end_pos) ]
+
+    return df
 
 #####################################################
 ### Function to check common member between lists ###
@@ -200,46 +217,26 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
 
     # Open GFF for more customisable / exact filters
     records = []
+
     for rec in GFF.parse(open(input), limit_info=limit_info):
 
-        indexes = [] # Indexes to maintain
+        ###############################################
+        ### Complex search: loop in attributes nest ###
+        ### Remove features based on attributes it  ###
+        ### tries to maintain the nestness of the   ###
+        ### GFF, which means, it searchs the value  ###
+        ### in the first, second and third level of ###
+        ### the nest, respectively. If found in     ###
+        ### first, all its childs are given; If     ###
+        ### found in second, its parent and its     ###
+        ### childs are given; If found in the third,###
+        ### its parents and grand-parents are given ###
+        ###############################################
 
-        # Remove features based on strand
-        ## Wants plus strand
-        if strand == "plus":
-            for index, f in enumerate(rec.features):
-                if int(f.location.strand) == 1:
-                    indexes.append(int(index))
-
-        ## Wants minus strand
-        if strand == "minus":
-            for index, f in enumerate(rec.features):
-                if int(f.location.strand) == -1:
-                    indexes.append(int(index))
-
-        # Remove features based on position
-        ## Min (start)
-        if start_pos != None:
-            for index, f in enumerate(rec.features):
-                if int(f.location.start) + 1 >= int(start_pos): # Biopython is zero-based
-                    indexes.append(int(index))
-
-        ## Max (end)
-        if end_pos != None:
-            for index, f in enumerate(rec.features):
-                if int(f.location.end) <= int(end_pos):
-                    indexes.append(int(index))
-
-        ## Remove features based on attributes
-        ## It tries to maintain the nestness of the GFF
-        ## Which means, it searchs the key-value tuple
-        ## in the first, second and third level of the
-        ## nest, respectively.
-        ## If found in first, all its childs are given;
-        ## If found in second, its parent and its childs are given
-        ## If found in the third, its parents and grand-parents
-        ## are given
         if att_file != None:
+
+            indexes = [] # Indexes to be saved by this filter -- only applies if given by user
+
             att_filter = {} # Store data from file
             for line in open(att_file, "r"):
                 line = line.strip()
@@ -300,6 +297,8 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
                                 ### 2nd level child feature ###
                                 ###############################
 
+                                subsub_index_list = [] # Create a list for saved indexes
+
                                 # Checking the value of the attribute key in the 2nd level child feature
                                 for subsub_index, subsub in enumerate(sub.sub_features):
 
@@ -312,6 +311,7 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
                                             if common_member(subsub.qualifiers[field], list(set(att_filter[field]))) == True:
                                                 indexes.append(int(index)) # Save the main feature
                                                 sub_index_list.append(int(sub_index)) # Save the subfeature
+                                                subsub_index_list.append(int(subsub_index)) # Save this subsubfeature
 
                                             else:
                                                 pass
@@ -319,17 +319,73 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
                                     except:
                                         pass
 
+                                # Finish the parsing for subsubfeatures
+                                # Remove childs that were not selected -- after the loop in all childs
+                                # outside the for loop. Change the subfeatures of this parent in the main object
+                                rec.features[index].sub_features[sub_index].sub_features = [ i for j, i in enumerate(sub.sub_features) if j in list(set(subsub_index_list)) ]
+
                         # Finish the parsing for subfeatures
                         # Remove childs that were not selected -- after the loop in all childs
                         # outside the for loop. Change the subfeatures of this parent in the main object
                         rec.features[index].sub_features = [ i for j, i in enumerate(f.sub_features) if j in list(set(sub_index_list)) ]
 
-        ##########################################################
-        ### Clean list of main features since we passed by all ###
-        ##########################################################
-        rec.features = [i for j, i in enumerate(rec.features) if j in list(set(indexes))]
+            # Filter out the features that do not pass the filter
+            rec.features = [i for j, i in enumerate(rec.features) if j in list(set(indexes))]
 
-        # Save by appending
+        ##############################################################################
+        ### START of simpler filters, it is better to put it after the complex one ###
+        ### based on the loop in attributes of parents and childs since it depends ###
+        ### on it                                                                  ###
+        ##############################################################################
+
+
+        # Simpler filters: start, end, strand
+        simpler_filtered_out_indexes = [] # Indexes that must be removed by the simpler filters
+
+        # Remove features based on strand
+        ## Wants plus strand
+        if strand == "plus":
+            for index, f in enumerate(rec.features):
+                try:
+                    if int(f.location.strand) == -1:
+                        # Strand equals to the minus strand, thus remove
+                        simpler_filtered_out_indexes.append(int(index))
+                except:
+                    # There is a problem ... the strand columns is not correct
+                    # Thus we let it stay since we cannot assure is procedence
+                    # And the user can check it.
+                    pass
+
+        ## Wants minus strand
+        elif strand == "minus":
+            for index, f in enumerate(rec.features):
+                try:
+                    if int(f.location.strand) == 1:
+                        # Strand equals to the plus strand, thus remove
+                        simpler_filtered_out_indexes.append(int(index))
+                except:
+                    # There is a problem ... the strand columns is not correct
+                    # Thus we let it stay since we cannot assure is procedence
+                    # And the user can check it.
+                    pass
+
+        # Remove features based on position
+        ## Min (start)
+        if start_pos != None:
+            for index, f in enumerate(rec.features):
+                if int(f.location.start) + 1 < int(start_pos): # Biopython is zero-based
+                    simpler_filtered_out_indexes.append(int(index))
+
+        ## Max (end)
+        if end_pos != None:
+            for index, f in enumerate(rec.features):
+                if int(f.location.end) > int(end_pos):
+                    simpler_filtered_out_indexes.append(int(index))
+
+        # Filter out the features that do not passed the simpler filters
+        rec.features = [i for j, i in enumerate(rec.features) if j not in list(set(simpler_filtered_out_indexes))]
+
+        # Save record by appending
         records.append(rec)
 
     # Done
@@ -352,10 +408,10 @@ def df_col_filter(df, column, pattern):
 ######################################################
 ### Function for simple filter with single pattern ###
 ######################################################
-def filter_loose_mode(input_gff, column, pattern, sort, header):
+def filter_loose_mode(input_gff, column, pattern, sort, header, strand, start_pos, end_pos):
 
     # Read GFF file
-    df = read_gff_df(input_gff)
+    df = read_gff_df(input=input_gff, strand=strand, start_pos=start_pos, end_pos=end_pos)
 
     # Sort
     if sort == True:
@@ -366,7 +422,10 @@ def filter_loose_mode(input_gff, column, pattern, sort, header):
         print("##gff-version 3")
 
     # Filter
-    print(df_col_filter(df=df, column=str(column), pattern=str(pattern)))
+    if pattern != None:
+        print(df_col_filter(df=df, column=str(column), pattern=str(pattern)))
+    else:
+        print(df.to_csv(sep='\t', index=False, header=False).strip())
 
 #######################################################
 ### Function for complex filter with single pattern ###
@@ -399,7 +458,8 @@ def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_li
 
     # Simple filter
     if mode == "loose":
-        filter_loose_mode(input_gff=input_gff, column=column, pattern=pattern, sort=sort, header=header)
+        filter_loose_mode(input_gff=input_gff, column=column, pattern=pattern, sort=sort, header=header,
+                          start_pos=start_pos, end_pos=end_pos, strand=strand)
 
     # Complex filter
     elif mode == "exact":
