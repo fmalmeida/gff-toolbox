@@ -61,6 +61,19 @@ options:
     --attributes=<file_with_attributes>                     Pass a file containing the desired values to filter in the attributes column.
                                                             The key/field to search in the 9th column is given in a header-like manner
                                                             with the desired values following it. Checkout the file in test directory.
+                                                            In nested GFFs, it searches for the value in the field wanted until the second
+                                                            level of child features (children of the children).
+
+                                                            This file must have the attribute key as a header starting with '##' and its
+                                                            values in the following lines. E.g.:
+
+                                                                    ##product
+                                                                    desired product 1
+                                                                    desired product 2
+                                                                    ##ID
+                                                                    desired gene id 1
+                                                                    desired gene id 2
+                                                                    ...
 
 
 example:
@@ -79,12 +92,8 @@ $ gff-toolbox filter --mode loose --sort --header -i Kp_ref.gff -p "putative"
 $ gff-toolbox filter -i Kp_ref.gff --chr NC_016845.1 --type CDS | gff-toolbox filter --mode loose -p "transcriptional regulator"
 $ gff-toolbox filter --mode loose -i Kp_ref.gff -p "transcriptional regulator" | gff-toolbox filter --chr NC_016845.1 --type CDS
 
-    ## An example using a file containing the desired attributes that a feature must contain
-    ## to be printed. Attribute keys are set in lines starting with '##' following by the key name
-    ## e.g. ##ID. The lines following it are the values that these keys may have in GFF file in order
-    ## to be printed. Check the atts.txt file in the test directory to understand it better.
-    ##
-    ## In the example we filter by the product key value found in the attributes column.
+    ## Filtering a set of genes and its childs using a file containing the desired attributes.
+    ## K. pneumoniae annotation.
 
 $ gff-toolbox filter -i Kp_ref.gff --attributes atts.txt
 
@@ -105,6 +114,21 @@ from BCBio.GFF import GFFExaminer
 import subprocess
 import tempfile
 
+#######################
+### Def error class ###
+#######################
+class Error(Exception):
+    """Base class for other exceptions"""
+    pass
+
+class noChild(Error):
+    """it has no childs"""
+    pass
+
+class goChild(Error):
+    """let's check the child"""
+    pass
+
 ####################################
 ### Function to import gff as df ###
 ####################################
@@ -118,12 +142,9 @@ def read_gff_df(input):
 ### Function to check common member between lists ###
 #####################################################
 def common_member(a, b):
-    a_set = set(a)
-    b_set = set(b)
-    if (a_set & b_set):
-        return True
-    else:
-        return False
+
+    result = not set(a).isdisjoint(set(b))
+    return result
 
 ######################################
 ### Function to import gff as dict ###
@@ -210,6 +231,14 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
                     indexes.append(int(index))
 
         ## Remove features based on attributes
+        ## It tries to maintain the nestness of the GFF
+        ## Which means, it searchs the key-value tuple
+        ## in the first, second and third level of the
+        ## nest, respectively.
+        ## If found in first, all its childs are given;
+        ## If found in second, its parent and its childs are given
+        ## If found in the third, its parents and grand-parents
+        ## are given
         if att_file != None:
             att_filter = {} # Store data from file
             for line in open(att_file, "r"):
@@ -232,64 +261,68 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
                     # Checking the value of the attribute key in the main feature
                     try:
                         if len(f.qualifiers[field]) > 0:
-                            if common_member(f.qualifiers[field], list(set(att_filter[field]))): # it matches
-                                indexes.append(int(index)) # Save this feature
 
-                    # Feature does not have this attribute key
-                    except:
-                        pass
+                            if common_member(f.qualifiers[field], list(set(att_filter[field]))):
+                                indexes.append(int(index)) # Save this feature and its childs.
 
-                    ###############################
-                    ### 1st level child feature ###
-                    ###############################
-                    sub_index_list    = []
+                            else:
+                                # Despite having the same attribute-key, the value is not what the
+                                # user wants. Maybe it refers to the same key in a child feature?
+                                raise goChild
 
-                    # Checking the value of the attribute key in the 1st level child feature
-                    try:
-                        # It has a child?
+                    except (goChild, KeyError):
+
+                        ###############################
+                        ### 1st level child feature ###
+                        ###############################
+
+                        sub_index_list = [] # Create a list for saved indexes
+
+                        # Checking the value of the attribute key in the 1st level child feature
                         for sub_index, sub in enumerate(f.sub_features):
 
-                            if len(sub.qualifiers[field]) > 0:
-                                if common_member(sub.qualifiers[field], list(set(att_filter[field]))): # it matches
-                                    indexes.append(int(index)) # Save the main feature
-                                    sub_index_list.append(int(sub_index)) # Save the subfeature
+                            try:
 
-                    # Feature does not have this attribute key
-                    except:
-                        pass
+                                if len(sub.qualifiers[field]) > 0:
 
-                    ###############################
-                    ### 2nd level child feature ###
-                    ###############################
-                    subsub_index_list    = []
-
-                    # Checking the value of the attribute key in the 1st level child feature
-                    try:
-                        # It has a child?
-                        for sub_index, sub in enumerate(f.sub_features):
-                            for subsub_index, subsub in enumerate(sub.sub_features):
-                                if len(subsub.qualifiers[field]) > 0:
-                                    if common_member(subsub.qualifiers[field], list(set(att_filter[field]))): # it matches
+                                    if common_member(sub.qualifiers[field], list(set(att_filter[field]))):
                                         indexes.append(int(index)) # Save the main feature
                                         sub_index_list.append(int(sub_index)) # Save the subfeature
-                                        subsub_index_list.append(int(subsub_index)) # Save the subsubfeature
 
-                            #############################################################
-                            ### Clean list of 2nd level childs since we passed by all ###
-                            #############################################################
-                            sub.sub_features = [i for j, i in enumerate(sub.sub_features) if j in list(set(subsub_index_list))]
+                                    else:
+                                        # Despite having the same attribute-key, the value is not what the
+                                        # user wants. Maybe it refers to the same key in a child feature?
+                                        raise goChild
 
-                    # Feature does not have this attribute key
-                    except:
-                        pass
+                            except(goChild, KeyError):
 
-                    # Even if it has more childs, I'll not go any further
+                                ###############################
+                                ### 2nd level child feature ###
+                                ###############################
 
-                    #############################################################
-                    ### Clean list of 1st level childs since we passed by all ###
-                    #############################################################
-                    f.sub_features = [i for j, i in enumerate(f.sub_features) if j in list(set(sub_index_list))]
+                                # Checking the value of the attribute key in the 2nd level child feature
+                                for subsub_index, subsub in enumerate(sub.sub_features):
 
+                                    # Inside the 2nd level child
+
+                                    try:
+
+                                        if len(subsub.qualifiers[field]) > 0:
+
+                                            if common_member(subsub.qualifiers[field], list(set(att_filter[field]))) == True:
+                                                indexes.append(int(index)) # Save the main feature
+                                                sub_index_list.append(int(sub_index)) # Save the subfeature
+
+                                            else:
+                                                pass
+
+                                    except:
+                                        pass
+
+                        # Finish the parsing for subfeatures
+                        # Remove childs that were not selected -- after the loop in all childs
+                        # outside the for loop. Change the subfeatures of this parent in the main object
+                        rec.features[index].sub_features = [ i for j, i in enumerate(f.sub_features) if j in list(set(sub_index_list)) ]
 
         ##########################################################
         ### Clean list of main features since we passed by all ###
