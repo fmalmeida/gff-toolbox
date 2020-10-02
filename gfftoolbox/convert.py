@@ -8,14 +8,16 @@ This command uses several python libraries to provide an easy way to convert you
 
 usage:
     gff-toolbox convert [ -h|--help ]
-    gff-toolbox convert [ --input <gff> --format <out_format> --fasta <genome_file> --fasta_features <feature_types> --translation_table <int>]
+    gff-toolbox convert [ --input <gff> --format json ]
+    gff-toolbox convert [ --input <gff> --format fasta --fasta <genome_file> --fasta_features <feature_types> --translation_table <int>]
+    gff-toolbox convert [ --input <gff> --format genbank --fasta <genome_file> --translation_table <int>]
 
 options:
     -h --help                                               Show this screen
     -i, --input=<gff>                                       Input GFF file. GFF file must not contain recuences with it. [Default: stdin].
     -f, --format=<out_format>                               Convert to which format? Options: json,fasta-nt, fasta-aa, genbank. [Default: genbank]
 
-                                                For convertion to FASTA
+                                                Converting to FASTA or Genbank
 
     --fasta=<genome_file>                                   Genomic fasta file to extract features from.
     --fasta_features=<feature_types>                        A comma separated list of feature types to extract. Must be identical as written
@@ -44,6 +46,7 @@ Obs: The smaller the input, the fastest the convertion.
 ### Loading Necessary Packages ###
 ##################################
 import sys
+import os
 import time
 from collections import namedtuple
 import gzip
@@ -51,6 +54,8 @@ import urllib.request, urllib.parse, urllib.error
 import json
 from BCBio import GFF
 from Bio import SeqIO
+from io import StringIO
+from Bio.Alphabet import generic_dna
 
 #######################
 ### Def error class ###
@@ -227,6 +232,49 @@ def gff2fasta(input, fasta, features, format, translation_table):
             except:
                 pass
 
+##########################
+### Convert to Genbank ###
+##########################
+def gff2gbk(input, fasta):
+
+    def _flatten_features(rec):
+        """Make sub_features in an input rec flat for output.
+
+        GenBank does not handle nested features, so we want to make
+        everything top level.
+        """
+        out = []
+        for f in rec.features:
+            cur = [f]
+            while len(cur) > 0:
+                nextf = []
+                for curf in cur:
+                    out.append(curf)
+                    if len(curf.sub_features) > 0:
+                        nextf.extend(curf.sub_features)
+                cur = nextf
+        rec.features = out
+        return rec
+
+    def _seq_getter(rec, fasta):
+
+        rec.seq = fasta[rec.location.start:rec.location.end]
+
+        return rec
+
+    genome = SeqIO.to_dict(SeqIO.parse(gzip_opener(fasta), "fasta", generic_dna))
+
+    for seq in GFF.parse(gzip_opener(input), base_dict=genome):
+
+        out = []
+
+        for f in _flatten_features(seq).features:
+            record = _seq_getter(f, seq.seq)
+            record.name = seq.name
+            out.append(record)
+        seq.features = out
+        SeqIO.write(seq, sys.stdout, "genbank")
+
 ################
 ### Def main ###
 ################
@@ -238,6 +286,8 @@ def convert(filename, format, fasta, fasta_features, translation_table):
     elif format == "fasta-nt" or format == "fasta-aa":
         gff2fasta(input=filename, fasta=fasta, features=fasta_features,
                   format=format, translation_table=translation_table)
+    elif format == "genbank":
+        gff2gbk(input=filename, fasta=fasta)
 
     else:
         print(f"""
