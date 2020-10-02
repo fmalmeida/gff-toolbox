@@ -8,18 +8,36 @@ This command uses several python libraries to provide an easy way to convert you
 
 usage:
     gff-toolbox convert [ -h|--help ]
-    gff-toolbox convert [ --input <gff> --format <out_format> ]
+    gff-toolbox convert [ --input <gff> --format <out_format> --fasta <genome_file> --fasta_features <feature_types> --translation_table <int>]
 
 options:
     -h --help                                               Show this screen
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences with it. [Default: stdin]
-    -f, --format=<out_format>                               Convert to which format? Options: json
+    -i, --input=<gff>                                       Input GFF file. GFF file must not contain recuences with it. [Default: stdin].
+    -f, --format=<out_format>                               Convert to which format? Options: json,fasta-nt, fasta-aa, genbank. [Default: genbank]
+
+                                                For convertion to FASTA
+
+    --fasta=<genome_file>                                   Genomic fasta file to extract features from.
+    --fasta_features=<feature_types>                        A comma separated list of feature types to extract. Must be identical as written
+                                                            in the GFF file. [Default: CDS]
+    -t, --translation_table=<int>                           NCBI's translation table number. For converting nucleotide sequences to protein.
+                                                            Read more at https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi. [Default: 1]
 
 example:
 
     ## Converting a GFF to JSON
 
-$ gff-toolbox convert -i input.gff -f json
+$ gff-toolbox convert -i Kp_ref.gff -f json
+
+    ## Get CDS sequences from GFF to protein fasta
+
+$ gff-toolbox convert -i Kp_ref.gff -f fasta-aa --fasta Kpneumoniae_genome.fasta -t 11
+
+    ## Get mRNA sequences from GFF, in nucleotide fasta
+
+$ gff-toolbox convert -i Athaliana_ref.gff --fasta Athaliana_genome.fasta --format fasta-nt --fasta_features mRNA
+
+Obs: The smaller the input, the fastest the convertion.
 """
 
 ##################################
@@ -31,11 +49,24 @@ from collections import namedtuple
 import gzip
 import urllib.request, urllib.parse, urllib.error
 import json
+from BCBio import GFF
+from Bio import SeqIO
+
+#######################
+### Def error class ###
+#######################
+class Error(Exception):
+    """Base class for other exceptions"""
+    pass
+
+class wrong(Error):
+    """it has no childs"""
+    pass
 
 ######################################
 ### GFF columns names -- immutable ###
 ######################################
-gff_cols = ["seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"]
+gff_cols = ["recid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"]
 
 #############################################
 ### Parse attribute columns as dictionary ###
@@ -52,6 +83,23 @@ def att_to_dict(attributes):
             break
 
     return final
+
+########################
+### Useful functions ###
+########################
+def fasta_printer(id, seq):
+    print(f">{id}\n{seq}")
+
+def tag_getter(record, seq):
+    if record.id != "":
+        tag = record.id
+    else:
+        tag = f"{record.type}_{seq.id}:{record.location.start}-{record.location.end}"
+
+    return tag
+
+def gzip_opener(input):
+    return gzip.open(input, mode="rt") if input.endswith(".gz") else open(input)
 
 #######################
 ### Convert to JSON ###
@@ -75,7 +123,7 @@ def gff2json(filename):
         #If this fails, the file format is not standard-compatible
         assert len(parts) == len(gff_cols)
         #Separate Values
-        seq        = parts[0]
+        rec        = parts[0]
         source     = parts[1]
         feature    = parts[2]
         start      = parts[3]
@@ -86,7 +134,7 @@ def gff2json(filename):
         attributes = att_to_dict(parts[8])
         gff_dict = {
             # "CDS" : attributes[0],
-            "seqid"     : seq,
+            "recid"     : rec,
             "source"    : source,
             "type"      : feature,
             "start"     : start,
@@ -104,13 +152,92 @@ def gff2json(filename):
     final = final.replace("[", "{").replace("]", "}")
     print(final)
 
+########################
+### Convert to FASTA ###
+########################
+def gff2fasta(input, fasta, features, format, translation_table):
+
+    # Subset GFF based on chr and feature type
+    limit_info = dict(
+            gff_type = list(features.split(','))
+    )
+    features = limit_info['gff_type']
+    # Parse fasta
+    rec_dict = SeqIO.to_dict(SeqIO.parse(gzip_opener(fasta), "fasta"))
+
+    # Read the gff
+    for seq in GFF.parse(gzip_opener(input), base_dict=rec_dict, limit_info=limit_info):
+
+        genome = seq.seq
+
+        for rec in seq.features:
+
+            # Let's search for each in three levels of childs
+
+            try:
+
+                if rec.type in features:
+                    tag = tag_getter(rec, seq=seq)
+                    if format == "fasta-aa":
+                        fasta_printer(tag, genome[rec.location.start:rec.location.end].translate(table=translation_table))
+                    else:
+                        fasta_printer(tag, genome[rec.location.start:rec.location.end])
+                else:
+                    raise wrong
+
+            except wrong:
+
+                for sub in rec.sub_features:
+
+                    try:
+
+                        if sub.type in features:
+                            tag = tag_getter(sub, seq=seq)
+                            if format == "fasta-aa":
+                                fasta_printer(tag, genome[sub.location.start:sub.location.end].translate(table=translation_table))
+                            else:
+                                fasta_printer(tag, genome[sub.location.start:sub.location.end])
+                        else:
+                            raise wrong
+
+                    except wrong:
+
+                        for subsub in sub.sub_features:
+
+                            try:
+
+                                if subsub.type in features:
+                                    tag = tag_getter(subsub, seq=seq)
+                                    if format == "fasta-aa":
+                                        fasta_printer(tag, genome[subsub.location.start:subsub.location.end].translate(table=translation_table))
+                                    else:
+                                        fasta_printer(tag, genome[subsub.location.start:subsub.location.end])
+                                else:
+                                    raise wrong
+
+                            except wrong:
+                                pass
+
+                            except:
+                                pass
+
+                    except:
+                        pass
+
+            except:
+                pass
+
 ################
 ### Def main ###
 ################
-def convert(filename, format):
+def convert(filename, format, fasta, fasta_features, translation_table):
 
     if format == "json" :
         gff2json(filename=filename)
+
+    elif format == "fasta-nt" or format == "fasta-aa":
+        gff2fasta(input=filename, fasta=fasta, features=fasta_features,
+                  format=format, translation_table=translation_table)
 
     else:
         print(f"""

@@ -113,7 +113,8 @@ def main():
 
         ## Run it
         elif args_convert['convert'] and args_convert['--input'] and args_convert['--format'] and not args_convert['--help']:
-            convert(filename=args_convert['--input'], format=args_convert['--format'])
+            convert(filename=args_convert['--input'], format=args_convert['--format'], fasta=args_convert['--fasta'],
+                    fasta_features=args_convert['--fasta_features'], translation_table=args_convert['--translation_table'])
 
         else:
             print(usage_convert.strip())

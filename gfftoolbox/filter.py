@@ -99,7 +99,7 @@ $ gff-toolbox filter -i Kp_ref.gff --attributes atts.txt
     ## Filtering a set of genes and its childs using a file containing the desired attributes.
     ## A. thaliana annotation. Also give a custom start position for features to be printed?
 
-$ gff-toolbox filter -i TAIR9_GFF3_genes.gff --attributes atts2.txt --start 5900
+$ gff-toolbox filter -i Athaliana_ref.gff --attributes atts2.txt --start 5900
 """
 
 ##################################

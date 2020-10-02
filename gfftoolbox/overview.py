@@ -17,7 +17,7 @@ example:
 
     ## Getting the overview of a generic GFF file
 
-$ gff-toolbox overview -i TAIR9_GFF3_genes.gff
+$ gff-toolbox overview -i Athaliana_ref.gff
 """
 
 ##################################
