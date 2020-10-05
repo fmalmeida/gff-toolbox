@@ -82,6 +82,8 @@ from BCBio import GFF
 from BCBio.GFF import GFFExaminer
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import binascii
+import gzip
 
 ###################
 ### Stdin Check ###
@@ -89,7 +91,7 @@ import matplotlib.pyplot as plt
 def stdin_checker(input):
     # Checking for stdin
     if input == "stdin":
-        tmp = tempfile.NamedTemporaryFile(mode = "w+t") # Create tmp file to work as input
+        tmp = tempfile.NamedTemporaryFile(mode = "w+t", delete = False) # Create tmp file to work as input
         temp_file = open(tmp.name, 'w')
         for line in sys.stdin:
             temp_file.writelines(f"{line}")
