@@ -30,28 +30,47 @@ from BCBio.GFF import GFFExaminer
 import tempfile
 import sys
 
-##################################################
-### Function for checking available qualifiers ###
-##################################################
-def overview(infile):
-
+###################
+### Stdin Check ###
+###################
+def stdin_checker(input):
     # Checking for stdin
-    if infile == "stdin":
+    if input == "stdin":
         tmp = tempfile.NamedTemporaryFile(mode = "w+t") # Create tmp file to work as input
         temp_file = open(tmp.name, 'w')
         for line in sys.stdin:
             temp_file.writelines(f"{line}")
 
         temp_file.seek(0)
-        infile = tmp.name
+        input = tmp.name
+
+    else:
+        pass
+
+    return input
+
+###################
+### Gzip opener ###
+###################
+def gzip_opener(input, mode_in):
+    if  binascii.hexlify(open(input, 'rb').read(2)) == b"1f8b" or input.endswith(".gz"):
+        return gzip.open(input, mode=mode_in)
+    else:
+        open(input, mode=mode_in)
+
+##################################################
+### Function for checking available qualifiers ###
+##################################################
+def overview(infile):
+
+    # Checking for stdin
+    infile = stdin_checker(infile)
 
     ## Module
     examiner = GFFExaminer()
 
     ## Open connection
-    in_handle = open(infile)
-    summary = examiner.available_limits(in_handle)
-    in_handle.close()
+    summary = examiner.available_limits(gzip_opener(infile, "rt"))
 
     ## Print
     print(f"""

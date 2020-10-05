@@ -20,7 +20,7 @@ options:
                                                 Converting to FASTA or Genbank
 
     --fasta=<genome_file>                                   Genomic fasta file to extract features from.
-    --fasta_features=<feature_types>                        A comma separated list of feature types to extract. Must be identical as written
+    -l, --fasta_features=<feature_types>                        A comma separated list of feature types to extract. Must be identical as written
                                                             in the GFF file. [Default: CDS]
     -t, --translation_table=<int>                           NCBI's translation table number. For converting nucleotide sequences to protein.
                                                             Read more at https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi. [Default: 1]
@@ -37,7 +37,11 @@ $ gff-toolbox convert -i Kp_ref.gff -f fasta-aa --fasta Kpneumoniae_genome.fasta
 
     ## Get mRNA sequences from GFF, in nucleotide fasta
 
-$ gff-toolbox convert -i Athaliana_ref.gff --fasta Athaliana_genome.fasta --format fasta-nt --fasta_features mRNA
+$ gff-toolbox convert -i Athaliana_ref.gff.gz --fasta Athaliana_genome.fasta.gz --format fasta-nt --fasta_features mRNA
+
+    ## Converting a GFF to GenBank
+
+$ gff-toolbox convert -i Athaliana_ref.gff.gz--fasta Athaliana_genome.fasta.gz
 
 Obs: The smaller the input, the fastest the convertion.
 """
@@ -55,18 +59,7 @@ import json
 from BCBio import GFF
 from Bio import SeqIO
 from io import StringIO
-from Bio.Alphabet import generic_dna
-
-#######################
-### Def error class ###
-#######################
-class Error(Exception):
-    """Base class for other exceptions"""
-    pass
-
-class wrong(Error):
-    """it has no childs"""
-    pass
+import binascii
 
 ######################################
 ### GFF columns names -- immutable ###
@@ -92,9 +85,29 @@ def att_to_dict(attributes):
 ########################
 ### Useful functions ###
 ########################
+
+# Check for stdin
+def stdin_checker(input):
+    # Checking for stdin
+    if input == "stdin":
+        tmp = tempfile.NamedTemporaryFile(mode = "w+t") # Create tmp file to work as input
+        temp_file = open(tmp.name, 'w')
+        for line in sys.stdin:
+            temp_file.writelines(f"{line}")
+
+        temp_file.seek(0)
+        input = tmp.name
+
+    else:
+        pass
+
+    return input
+
+# Print fasta format
 def fasta_printer(id, seq):
     print(f">{id}\n{seq}")
 
+# Get feature identifier
 def tag_getter(record, seq):
     if record.id != "":
         tag = record.id
@@ -103,8 +116,32 @@ def tag_getter(record, seq):
 
     return tag
 
-def gzip_opener(input):
-    return gzip.open(input, mode="rt") if input.endswith(".gz") else open(input)
+# Open gzipped files
+def gzip_opener(input, mode_in):
+    if  binascii.hexlify(open(input, 'rb').read(2)) == b"1f8b" or input.endswith(".gz"):
+        return gzip.open(input, mode=mode_in)
+    else:
+        open(input, mode=mode_in)
+
+# Remove nest from GFF
+def _flatten_features(rec):
+        """Make sub_features in an input rec flat for output.
+
+        GenBank does not handle nested features, so we want to make
+        everything top level.
+        """
+        out = []
+        for f in rec.features:
+            cur = [f]
+            while len(cur) > 0:
+                nextf = []
+                for curf in cur:
+                    out.append(curf)
+                    if len(curf.sub_features) > 0:
+                        nextf.extend(curf.sub_features)
+                cur = nextf
+        rec.features = out
+        return rec
 
 #######################
 ### Convert to JSON ###
@@ -114,13 +151,11 @@ def gff2json(filename):
     gff_dict = {} # Initialize gff as dict
     final    = [] # Final list for JSON
 
-    openFunc = gzip.open if filename.endswith(".gz") else open # Parse with transparent decompression
-
     # Check if is stdin
-    if filename == "stdin":
-        contents = sys.stdin
-    else:
-        contents = openFunc(filename)
+    filename = stdin_checker(filename)
+
+    # Open
+    contents = gzip_opener(filename, "w+t")
 
     for line in contents:
         if line.startswith("#"): continue
@@ -162,114 +197,65 @@ def gff2json(filename):
 ########################
 def gff2fasta(input, fasta, features, format, translation_table):
 
+    # Checking for stdin
+    input = stdin_checker(input)
+
     # Subset GFF based on chr and feature type
     limit_info = dict(
             gff_type = list(features.split(','))
     )
     features = limit_info['gff_type']
     # Parse fasta
-    rec_dict = SeqIO.to_dict(SeqIO.parse(gzip_opener(fasta), "fasta"))
+    rec_dict = SeqIO.to_dict(SeqIO.parse(gzip_opener(fasta, "rt"), "fasta"))
 
     # Read the gff
-    for seq in GFF.parse(gzip_opener(input), base_dict=rec_dict, limit_info=limit_info):
+    for seq in GFF.parse(gzip_opener(input, "rt"), base_dict=rec_dict, limit_info=limit_info):
 
         genome = seq.seq
 
-        for rec in seq.features:
+        for rec in _flatten_features(seq).features:
 
-            # Let's search for each in three levels of childs
-
-            try:
-
-                if rec.type in features:
-                    tag = tag_getter(rec, seq=seq)
-                    if format == "fasta-aa":
-                        fasta_printer(tag, genome[rec.location.start:rec.location.end].translate(table=translation_table))
-                    else:
-                        fasta_printer(tag, genome[rec.location.start:rec.location.end])
+            if rec.type in features:
+                tag = tag_getter(rec, seq=seq)
+                if format == "fasta-aa":
+                    fasta_printer(tag, genome[rec.location.start:rec.location.end].translate(table=translation_table))
                 else:
-                    raise wrong
-
-            except wrong:
-
-                for sub in rec.sub_features:
-
-                    try:
-
-                        if sub.type in features:
-                            tag = tag_getter(sub, seq=seq)
-                            if format == "fasta-aa":
-                                fasta_printer(tag, genome[sub.location.start:sub.location.end].translate(table=translation_table))
-                            else:
-                                fasta_printer(tag, genome[sub.location.start:sub.location.end])
-                        else:
-                            raise wrong
-
-                    except wrong:
-
-                        for subsub in sub.sub_features:
-
-                            try:
-
-                                if subsub.type in features:
-                                    tag = tag_getter(subsub, seq=seq)
-                                    if format == "fasta-aa":
-                                        fasta_printer(tag, genome[subsub.location.start:subsub.location.end].translate(table=translation_table))
-                                    else:
-                                        fasta_printer(tag, genome[subsub.location.start:subsub.location.end])
-                                else:
-                                    raise wrong
-
-                            except wrong:
-                                pass
-
-                            except:
-                                pass
-
-                    except:
-                        pass
-
-            except:
+                    fasta_printer(tag, genome[rec.location.start:rec.location.end])
+            else:
                 pass
 
 ##########################
 ### Convert to Genbank ###
 ##########################
-def gff2gbk(input, fasta):
+def gff2gbk(input, fasta, translation_table):
 
-    def _flatten_features(rec):
-        """Make sub_features in an input rec flat for output.
+    # Checking for stdin
+    input = stdin_checker(input)
 
-        GenBank does not handle nested features, so we want to make
-        everything top level.
-        """
-        out = []
-        for f in rec.features:
-            cur = [f]
-            while len(cur) > 0:
-                nextf = []
-                for curf in cur:
-                    out.append(curf)
-                    if len(curf.sub_features) > 0:
-                        nextf.extend(curf.sub_features)
-                cur = nextf
-        rec.features = out
-        return rec
+    def _seq_getter(rec, fasta, translation_table):
 
-    def _seq_getter(rec, fasta):
+        sequence = fasta[rec.location.start:rec.location.end]
 
-        rec.seq = fasta[rec.location.start:rec.location.end]
+        rec.seq = sequence
+
+        if rec.type.lower() != "region":
+            if str(rec.type).lower() == "cds" or str(rec.type).lower() == "protein":
+                rec.qualifiers['translation']  = sequence.translate(table=translation_table)
+            else:
+                rec.qualifiers['sequence'] = sequence
 
         return rec
 
-    genome = SeqIO.to_dict(SeqIO.parse(gzip_opener(fasta), "fasta", generic_dna))
+    genome = SeqIO.to_dict(SeqIO.parse(gzip_opener(fasta, "rt"), "fasta"))
 
-    for seq in GFF.parse(gzip_opener(input), base_dict=genome):
+    for seq in GFF.parse(gzip_opener(input, "rt"), base_dict=genome):
+
+        seq.annotations["molecule_type"] = "DNA"
 
         out = []
 
         for f in _flatten_features(seq).features:
-            record = _seq_getter(f, seq.seq)
+            record = _seq_getter(f, seq.seq, translation_table)
             record.name = seq.name
             out.append(record)
         seq.features = out
@@ -287,7 +273,7 @@ def convert(filename, format, fasta, fasta_features, translation_table):
         gff2fasta(input=filename, fasta=fasta, features=fasta_features,
                   format=format, translation_table=translation_table)
     elif format == "genbank":
-        gff2gbk(input=filename, fasta=fasta)
+        gff2gbk(input=filename, fasta=fasta, translation_table=translation_table)
 
     else:
         print(f"""

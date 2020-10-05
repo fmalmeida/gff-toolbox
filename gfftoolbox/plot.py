@@ -20,7 +20,7 @@ options:
                                             can be used as gene identifiers. GFF qualifiers are retrieved from the 9th column.
                                             Same as gff-toolbox overview command.
 
-    -i, --input=<gff>                       Used to plot dna features from a single GFF file.
+    -i, --input=<gff>                       Used to plot dna features from a single GFF file [Default: stdin].
 
     -f, --fofn=<file>                       Used to plot dna multiple features from multiple GFF files. Contents must be in csv format with 3 columns:
                                             gff,custom_label,color (HEX format). Features from each GFF will have the color set in the 3rd column.
@@ -83,22 +83,53 @@ from BCBio.GFF import GFFExaminer
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
+###################
+### Stdin Check ###
+###################
+def stdin_checker(input):
+    # Checking for stdin
+    if input == "stdin":
+        tmp = tempfile.NamedTemporaryFile(mode = "w+t") # Create tmp file to work as input
+        temp_file = open(tmp.name, 'w')
+        for line in sys.stdin:
+            temp_file.writelines(f"{line}")
+
+        temp_file.seek(0)
+        input = tmp.name
+
+    else:
+        pass
+
+    return input
+
+###################
+### Gzip opener ###
+###################
+def gzip_opener(input, mode_in):
+    if  binascii.hexlify(open(input, 'rb').read(2)) == b"1f8b" or input.endswith(".gz"):
+        return gzip.open(input, mode=mode_in)
+    else:
+        open(input, mode=mode_in)
+
 
 ##################################################
 ### Function for checking available qualifiers ###
 ##################################################
 def check_gff(infile):
 
+    # Stdin check
+    infile = stdin_checker(infile)
+
     # GFF overview
     print("GFF overview:\n")
     examiner = GFFExaminer()
-    in_handle = open(infile)
+    in_handle = gzip_opener(infile, "rt")
     pprint(examiner.available_limits(in_handle))
     in_handle.close()
     print("")
 
     # Load GFF and its sequences
-    gff = GFF.parse(infile)
+    gff = GFF.parse(gzip_opener(infile, "rt"))
 
     # Check qualifiers
     for rec in gff:
@@ -120,7 +151,7 @@ def single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_
     )
 
     # Load GFF and its sequences
-    gff = GFF.parse(infile, limit_info=limit_info)
+    gff = GFF.parse(gzip_opener(infile, "rt"), limit_info=limit_info)
 
     # Create empty features and legened list
     features = []
@@ -165,7 +196,7 @@ def single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_
 def multiple_gff(input_fofn, start, end, contig, qualifier, feature, outfile, plot_title, plot_width, plot_height):
 
     # Open list of filenames containing GFFs
-    file = open(input_fofn, 'r')
+    file = gzip_opener(input_fofn, 'r')
     content = file.readlines()
 
     # Create empty features and legened list
@@ -186,7 +217,7 @@ def multiple_gff(input_fofn, start, end, contig, qualifier, feature, outfile, pl
         )
 
         # Load GFF and its sequences
-        gff = GFF.parse(infile, limit_info=limit_info)
+        gff = GFF.parse(gzip_opener(infile, "rt"), limit_info=limit_info)
 
         ## Populate features list
         ## Filtering by location

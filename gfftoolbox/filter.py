@@ -128,6 +128,34 @@ class goChild(Error):
     """let's check the child"""
     pass
 
+###################
+### Stdin Check ###
+###################
+def stdin_checker(input):
+    # Checking for stdin
+    if input == "stdin":
+        tmp = tempfile.NamedTemporaryFile(mode = "w+t") # Create tmp file to work as input
+        temp_file = open(tmp.name, 'w')
+        for line in sys.stdin:
+            temp_file.writelines(f"{line}")
+
+        temp_file.seek(0)
+        input = tmp.name
+
+    else:
+        pass
+
+    return input
+
+###################
+### Gzip opener ###
+###################
+def gzip_opener(input, mode_in):
+    if  binascii.hexlify(open(input, 'rb').read(2)) == b"1f8b" or input.endswith(".gz"):
+        return gzip.open(input, mode=mode_in)
+    else:
+        open(input, mode=mode_in)
+
 ####################################
 ### Function to import gff as df ###
 ####################################
@@ -447,14 +475,10 @@ def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits, start_p
 def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_limits, type_limits, start_pos, end_pos, strand, att_file):
 
     # Checking for stdin
-    if input_gff == "stdin":
-        tmp = tempfile.NamedTemporaryFile(mode = "w+t") # Create tmp file to work as input
-        temp_file = open(tmp.name, 'w')
-        for line in sys.stdin:
-            temp_file.writelines(f"{line}")
+    input_gff = stdin_checker(input_gff)
 
-        temp_file.seek(0)
-        input_gff = tmp.name
+    # Gzip?
+    input_gff = gzip_opener(input_gff)
 
     # Simple filter
     if mode == "loose":
