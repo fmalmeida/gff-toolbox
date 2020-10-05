@@ -8,8 +8,8 @@ Enabling the visualization of a genomic region from a GFF using the DNA features
 
 usage:
     gff-toolbox plot -h|--help
-    gff-toolbox plot check-gff ( --input <gff> )
-    gff-toolbox plot ( --input <gff> | --fofn <file> ) ( --contig <contig_name> ) [ --start <start_base> --end <end_base> --feature <feature_type> --identification <id> --title <title> --label <label> --color <color> --output <png_out> --width <width> --height <height> ]
+    gff-toolbox plot check-gff [ --input <gff> ]
+    gff-toolbox plot [ --input <gff> | --fofn <file> ] ( --contig <contig_name> ) [ --start <start_base> --end <end_base> --feature <feature_type> --identification <id> --title <title> --label <label> --color <color> --output <png_out> --width <width> --height <height> ]
 
 options:
     -h --help                               Show this screen.
@@ -58,18 +58,18 @@ example:
     ## contig_1_segment0 sequence. Without much customization. Giving a custom label for the
     ## genes to appear in the legend and giving a different legend title.
 
-$ gff-toolbox plot -i input.gff --contig contig_1_segment0 --feature CDS,rRNA --start 1 --end 10000 -l "Generic features (CDS and rRNAs)" -t "Kp annotation"
+$ gff-toolbox plot -i Kp_ref.gff --contig NC_016845.1 --feature CDS,rRNA --start 10000 --end 20000 -l "Generic features (CDS and rRNAs)" -t "Kp annotation"
 
     ## Plotting CDS, rRNA and tRNA features with different colors. Setting the genomic region
-    ## in contig_1_segment0:1-10000. Checkout the example fofn file to understand it better.
+    ## in NC_016845.1:10000-20000. Checkout the example fofn file to understand it better.
 
-$ gff-toolbox plot -f input_example_for_plot.fofn --start 1 --end 10000 --contig contig_1_segment0 -t "Kp annotation" --feature CDS,rRNA,tRNA
+$ gff-toolbox plot -f kp_gffs.fofn --start 10000 --end 20000 --contig NC_016845.1 -t "Kp annotation" --feature CDS,rRNA,tRNA
 
     ## Same as above.
     ## This time, instead of plotting gene names we plot the gene products by setting the
     ## parameter --identification to the exact name of the key in the attributes column.
 
-$ gff-toolbox plot -f input_example_for_plot.fofn --start 1 --end 10000 --contig contig_1_segment0 -t "Kp annotation" --feature CDS,rRNA,tRNA --identification product
+$ gff-toolbox plot -f kp_gffs.fofn --start 10000 --end 20000 --contig NC_016845.1 -t "Kp annotation" --feature CDS,rRNA,tRNA --identification product
 """
 
 ##################################
@@ -84,16 +84,18 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import binascii
 import gzip
+import tempfile
+import sys
 
 ###################
 ### Stdin Check ###
 ###################
-def stdin_checker(input):
+def stdin_checker(input, sys_contents):
     # Checking for stdin
     if input == "stdin":
         tmp = tempfile.NamedTemporaryFile(mode = "w+t", delete = False) # Create tmp file to work as input
         temp_file = open(tmp.name, 'w')
-        for line in sys.stdin:
+        for line in sys_contents:
             temp_file.writelines(f"{line}")
 
         temp_file.seek(0)
@@ -111,7 +113,7 @@ def gzip_opener(input, mode_in):
     if  binascii.hexlify(open(input, 'rb').read(2)) == b"1f8b" or input.endswith(".gz"):
         return gzip.open(input, mode=mode_in)
     else:
-        open(input, mode=mode_in)
+        return open(input, mode=mode_in)
 
 
 ##################################################
@@ -120,21 +122,20 @@ def gzip_opener(input, mode_in):
 def check_gff(infile):
 
     # Stdin check
-    infile = stdin_checker(infile)
+    sys_contents = ""
+    if infile == "stdin":
+        sys_contents = sys.stdin.readlines()
+    else:
+        pass
 
     # GFF overview
     print("GFF overview:\n")
     examiner = GFFExaminer()
-    in_handle = gzip_opener(infile, "rt")
-    pprint(examiner.available_limits(in_handle))
-    in_handle.close()
+    pprint(examiner.available_limits(gzip_opener(stdin_checker(infile, sys_contents), "rt")))
     print("")
 
-    # Load GFF and its sequences
-    gff = GFF.parse(gzip_opener(infile, "rt"))
-
     # Check qualifiers
-    for rec in gff:
+    for rec in GFF.parse(gzip_opener(stdin_checker(infile, sys_contents), "rt")):
         print("Example of the GFF's first line available qualifiers from the 9th column:\n")
         print(rec.features[0])
         print("\nPlease select only one of the available qualifiers to be used as gene identification!")
@@ -146,14 +147,18 @@ def check_gff(infile):
 
 def single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_label, outfile, plot_title, plot_width, plot_height):
 
+    # Stdin check
+    sys_contents = ""
+    if infile == "stdin":
+        sys_contents = sys.stdin.readlines()
+    else:
+        pass
+
     # Subset GFF based on chr and feature type
     limit_info = dict(
             gff_id   = [contig],
             gff_type = list(feature.split(','))
     )
-
-    # Load GFF and its sequences
-    gff = GFF.parse(gzip_opener(infile, "rt"), limit_info=limit_info)
 
     # Create empty features and legened list
     features = []
@@ -164,7 +169,7 @@ def single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_
     end_nt   = int(end)
     length   = end_nt - start_nt
 
-    for rec in gff:
+    for rec in GFF.parse(gzip_opener(stdin_checker(infile, sys_contents), "rt"), limit_info=limit_info):
         for i in range(0, len(rec.features)):
             if ( int(rec.features[i].location.start) >= int(start_nt) and int(rec.features[i].location.end) <= int(end_nt) ):
 
@@ -198,7 +203,7 @@ def single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_
 def multiple_gff(input_fofn, start, end, contig, qualifier, feature, outfile, plot_title, plot_width, plot_height):
 
     # Open list of filenames containing GFFs
-    file = gzip_opener(input_fofn, 'r')
+    file = open(input_fofn, 'r')
     content = file.readlines()
 
     # Create empty features and legened list

@@ -132,7 +132,7 @@ def main():
             check_gff(args_plot['--input'])
 
         ## Single GFF
-        if args_plot['--input'] and args_plot['--start'] and args_plot['--end'] and args_plot['--contig']:
+        if args_plot['--input'] and args_plot['--start'] and args_plot['--end'] and args_plot['--contig'] and not args_plot['--fofn']:
             print("Executing the pipeline for a single GFF input")
             single_gff(infile=args_plot['--input'], start=args_plot['--start'], end=args_plot['--end'],
                        contig=args_plot['--contig'], feature=args_plot['--feature'], coloring=args_plot['--color'],
