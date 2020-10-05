@@ -58,11 +58,14 @@ If you have an analysis that you constantly do when working with GFFs and would 
 You can collaborate by:
 
 * flagging an **enhancement issue** discussing your idea in the homepage of the project
-* you can create and start the implementation of your own script/command in the project and then submit a **pull request**
+* you can fork the repo, create and start the implementation of your own script/command in the project and then submit a **pull request**
     * I'll then check the request, make sure it is in the same format and standards of the already implemented commands and **confirm** the inclusion.
     * Of course, you will be recognized as the developer/creator of that specific implementation.
 
-Checkout more at [github's advises on how to collaborate to projects](https://docs.github.com/en/free-pro-team@latest/github/collaborating-with-issues-and-pull-requests)
+Checkout more at about forking and contributing to repos at:
+
+* [Chase's tutorial](https://gist.github.com/Chaser324/ce0505fbed06b947d962)
+* [github's advises on how to collaborate to projects](https://docs.github.com/en/free-pro-team@latest/github/collaborating-with-issues-and-pull-requests)
 
 ## Citation
 

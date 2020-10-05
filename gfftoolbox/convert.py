@@ -41,7 +41,7 @@ $ gff-toolbox convert -i Athaliana_ref.gff.gz --fasta Athaliana_genome.fasta.gz 
 
     ## Converting a GFF to GenBank
 
-$ gff-toolbox convert -i Athaliana_ref.gff.gz--fasta Athaliana_genome.fasta.gz
+$ gff-toolbox convert -i Athaliana_ref.gff.gz --fasta Athaliana_genome.fasta.gz
 
 Obs: The smaller the input, the fastest the convertion.
 """
