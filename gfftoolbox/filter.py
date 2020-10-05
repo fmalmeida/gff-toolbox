@@ -18,7 +18,7 @@ options:
 
     -h --help                                               Show this screen.
 
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences, only features. [Default: stdin]
+    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences, only features [Default: stdin].
 
     -m, --mode=<search_mode>                                In which mode to search for patterns: loose or exact?
                                                             The loose mode, scans the GFF in a grep-like manner via pandas dataframes in which the user must specify
@@ -99,7 +99,7 @@ $ gff-toolbox filter -i Kp_ref.gff --attributes atts.txt
     ## Filtering a set of genes and its childs using a file containing the desired attributes.
     ## A. thaliana annotation. Also give a custom start position for features to be printed?
 
-$ gff-toolbox filter -i Athaliana_ref.gff --attributes atts2.txt --start 5900
+$ gff-toolbox filter -i Athaliana_ref.gff.gz --attributes atts2.txt --start 5900
 """
 
 ##################################
@@ -133,12 +133,12 @@ class goChild(Error):
 ###################
 ### Stdin Check ###
 ###################
-def stdin_checker(input):
+def stdin_checker(input, sys_contents):
     # Checking for stdin
     if input == "stdin":
         tmp = tempfile.NamedTemporaryFile(mode = "w+t", delete = False) # Create tmp file to work as input
         temp_file = open(tmp.name, 'w')
-        for line in sys.stdin:
+        for line in sys_contents:
             temp_file.writelines(f"{line}")
 
         temp_file.seek(0)
@@ -156,15 +156,22 @@ def gzip_opener(input, mode_in):
     if  binascii.hexlify(open(input, 'rb').read(2)) == b"1f8b" or input.endswith(".gz"):
         return gzip.open(input, mode=mode_in)
     else:
-        open(input, mode=mode_in)
+        return open(input, mode=mode_in)
 
 ####################################
 ### Function to import gff as df ###
 ####################################
 def read_gff_df(input, strand, start_pos, end_pos):
 
+    # Stdin
+    sys_contents = ""
+    if input == "stdin":
+        sys_contents = sys.stdin.readlines()
+    else:
+        pass
+
     # Guide: ['Chr', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes'
-    df = pd.read_csv(input, sep = "\t", comment = "#", names=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    df = pd.read_csv(gzip_opener(stdin_checker(input, sys_contents), 'rt'), sep = "\t", comment = "#", names=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
 
     ## Wants plus strand
     if strand == "plus":
@@ -198,6 +205,13 @@ def common_member(a, b):
 ######################################
 def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_pos, end_pos, att_file):
 
+    # Stdin
+    sys_contents = ""
+    if input == "stdin":
+        sys_contents = sys.stdin.readlines()
+    else:
+        pass
+
     # Check for the limits imposed by the user
     limit_info = {}
 
@@ -211,7 +225,7 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
     examiner = GFFExaminer()
 
     ## Open connections
-    summary = examiner.available_limits(open(input))
+    summary = examiner.available_limits(gzip_opener(stdin_checker(input, sys_contents), "rt"))
     gff_sources = []
     gff_types = []
 
@@ -248,7 +262,7 @@ def read_gff_dict(input, chr_limits, source_limits, type_limits, strand, start_p
     # Open GFF for more customisable / exact filters
     records = []
 
-    for rec in GFF.parse(open(input), limit_info=limit_info):
+    for rec in GFF.parse(gzip_opener(stdin_checker(input, sys_contents), "rt"), limit_info=limit_info):
 
         ###############################################
         ### Complex search: loop in attributes nest ###
@@ -463,8 +477,8 @@ def filter_loose_mode(input_gff, column, pattern, sort, header, strand, start_po
 def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits, start_pos, end_pos, strand, att_file):
 
     # Parse fields
-    gff_dict = read_gff_dict(input=input_gff, chr_limits=chr_limits, source_limits=source_limits, type_limits=type_limits,
-                             strand=strand, start_pos=start_pos, end_pos=end_pos, att_file=att_file)
+    gff_dict = read_gff_dict(input=input_gff, chr_limits=chr_limits, source_limits=source_limits,
+                             type_limits=type_limits, strand=strand, start_pos=start_pos, end_pos=end_pos, att_file=att_file)
 
     # Print the records filtered (each record is a sequence)
     for record in gff_dict:
@@ -475,12 +489,6 @@ def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits, start_p
 ### Def main ###
 ################
 def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_limits, type_limits, start_pos, end_pos, strand, att_file):
-
-    # Checking for stdin
-    input_gff = stdin_checker(input_gff)
-
-    # Gzip?
-    input_gff = gzip_opener(input_gff)
 
     # Simple filter
     if mode == "loose":
