@@ -9,8 +9,8 @@ This command uses several python libraries to provide an easy way to convert you
 usage:
     gff-toolbox convert [ -h|--help ]
     gff-toolbox convert [ --input <gff> --format json ]
-    gff-toolbox convert [ --input <gff> --format fasta --fasta <genome_file> --fasta_features <feature_types> --translation_table <int>]
-    gff-toolbox convert [ --input <gff> --format genbank --fasta <genome_file> --translation_table <int>]
+    gff-toolbox convert [ --input <gff> --format fasta --fasta <genome_file> --fasta_features <feature_types> --translation_table <int> ]
+    gff-toolbox convert [ --input <gff> --format genbank --fasta <genome_file> --translation_table <int> ]
 
 options:
     -h --help                                               Show this screen
