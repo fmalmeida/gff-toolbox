@@ -121,7 +121,7 @@ def gzip_opener(input, mode_in):
     if  binascii.hexlify(open(input, 'rb').read(2)) == b"1f8b" or input.endswith(".gz"):
         return gzip.open(input, mode=mode_in)
     else:
-        open(input, mode=mode_in)
+        return open(input, mode=mode_in)
 
 # Remove nest from GFF
 def _flatten_features(rec):
