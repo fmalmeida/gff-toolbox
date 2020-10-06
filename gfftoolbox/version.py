@@ -14,7 +14,7 @@ details. You should have received a copy of the GNU General Public License along
 If not, see <http://www.gnu.org/licenses/>.
 """
 
-__version__ = 'v0.1'
+__version__ = '0.1'
 
 def get_version():
     return __version__
