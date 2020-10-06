@@ -20,8 +20,7 @@ options:
                                                 Converting to FASTA or Genbank
 
     --fasta=<genome_file>                                   Genomic fasta file to extract features from.
-    -l, --fasta_features=<feature_types>                        A comma separated list of feature types to extract. Must be identical as written
-                                                            in the GFF file. [Default: CDS]
+    -l, --fasta_features=<feature_types>                    A comma separated list of feature types to extract. Must be identical as written in the GFF file. [Default: CDS]
     -t, --translation_table=<int>                           NCBI's translation table number. For converting nucleotide sequences to protein.
                                                             Read more at https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi. [Default: 1]
 
@@ -51,7 +50,9 @@ Obs: The smaller the input, the fastest the convertion.
 ##################################
 import sys
 import os
+import re
 import time
+import tempfile
 from collections import namedtuple
 import gzip
 import urllib.request, urllib.parse, urllib.error
@@ -91,7 +92,7 @@ def stdin_checker(input):
     # Checking for stdin
     if input == "stdin":
         tmp = tempfile.NamedTemporaryFile(mode = "w+t", delete = False) # Create tmp file to work as input
-        temp_file = open(tmp.name, 'w')
+        temp_file = open(tmp.name, 'w+t')
         for line in sys.stdin:
             temp_file.writelines(f"{line}")
 
@@ -151,11 +152,8 @@ def gff2json(filename):
     gff_dict = {} # Initialize gff as dict
     final    = [] # Final list for JSON
 
-    # Check if is stdin
-    filename = stdin_checker(filename)
-
     # Open
-    contents = gzip_opener(filename, "w+t")
+    contents = gzip_opener(stdin_checker(filename), "w+t")
 
     for line in contents:
         if line.startswith("#"): continue
@@ -197,25 +195,17 @@ def gff2json(filename):
 ########################
 def gff2fasta(input, fasta, features, format, translation_table):
 
-    # Checking for stdin
-    input = stdin_checker(input)
-
-    # Subset GFF based on chr and feature type
-    limit_info = dict(
-            gff_type = list(features.split(','))
-    )
-    features = limit_info['gff_type']
     # Parse fasta
     rec_dict = SeqIO.to_dict(SeqIO.parse(gzip_opener(fasta, "rt"), "fasta"))
 
     # Read the gff
-    for seq in GFF.parse(gzip_opener(input, "rt"), base_dict=rec_dict, limit_info=limit_info):
+    for seq in GFF.parse(gzip_opener(stdin_checker(input), "rt"), base_dict=rec_dict):
 
         genome = seq.seq
 
         for rec in _flatten_features(seq).features:
 
-            if rec.type in features:
+            if bool(re.search("|".join(list(features.split(','))).lower(), str(rec.type.lower()))):
                 tag = tag_getter(rec, seq=seq)
                 if format == "fasta-aa":
                     fasta_printer(tag, genome[rec.location.start:rec.location.end].translate(table=translation_table))
@@ -229,17 +219,15 @@ def gff2fasta(input, fasta, features, format, translation_table):
 ##########################
 def gff2gbk(input, fasta, translation_table):
 
-    # Checking for stdin
-    input = stdin_checker(input)
-
     def _seq_getter(rec, fasta, translation_table):
 
         sequence = fasta[rec.location.start:rec.location.end]
 
         rec.seq = sequence
 
-        if rec.type.lower() != "region":
-            if str(rec.type).lower() == "cds" or str(rec.type).lower() == "protein":
+        if not bool(re.search("region", str(rec.type.lower()))):
+
+            if bool(re.search("cds|protein", str(rec.type.lower()))):
                 rec.qualifiers['translation']  = sequence.translate(table=translation_table)
             else:
                 rec.qualifiers['sequence'] = sequence
@@ -248,7 +236,7 @@ def gff2gbk(input, fasta, translation_table):
 
     genome = SeqIO.to_dict(SeqIO.parse(gzip_opener(fasta, "rt"), "fasta"))
 
-    for seq in GFF.parse(gzip_opener(input, "rt"), base_dict=genome):
+    for seq in GFF.parse(gzip_opener(stdin_checker(input), "rt"), base_dict=genome):
 
         seq.annotations["molecule_type"] = "DNA"
 
