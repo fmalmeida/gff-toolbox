@@ -114,7 +114,8 @@ def main():
         ## Run it
         elif args_convert['convert'] and args_convert['--input'] and args_convert['--format'] and not args_convert['--help']:
             convert(filename=args_convert['--input'], format=args_convert['--format'], fasta=args_convert['--fasta'],
-                    fasta_features=args_convert['--fasta_features'], translation_table=args_convert['--translation_table'])
+                    fasta_features=args_convert['--fasta_features'], translation_table=args_convert['--translation_table'],
+                    db_name=args_convert['--db_name'], genome_name=args_convert['--genome_name'], mongo_path=args_convert['--mongo_path'])
 
         else:
             print(usage_convert.strip())

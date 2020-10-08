@@ -8,14 +8,26 @@ This command uses several python libraries to provide an easy way to convert you
 
 usage:
     gff-toolbox convert [ -h|--help ]
-    gff-toolbox convert [ --input <gff> --format json ]
+    gff-toolbox convert [ --input <gff> --format json --genome_name <genome_name> ]
+    gff-toolbox convert [ --input <gff> --format mongodb --db_name <db_name> --genome_name <genome_name> --mongo_path <mongo_path> ]
     gff-toolbox convert [ --input <gff> --format fasta --fasta <genome_file> --fasta_features <feature_types> --translation_table <int> ]
     gff-toolbox convert [ --input <gff> --format genbank --fasta <genome_file> --translation_table <int> ]
 
 options:
+                                                      Mandatory
+
     -h --help                                               Show this screen
     -i, --input=<gff>                                       Input GFF file. GFF file must not contain recuences with it. [Default: stdin].
-    -f, --format=<out_format>                               Convert to which format? Options: json,fasta-nt, fasta-aa, genbank. [Default: genbank]
+    -f, --format=<out_format>                               Convert to which format? Options: json, mongodb, fasta-nt, fasta-aa, genbank. [Default: genbank]
+
+                                                Converting to JSON and/or mongoDB
+
+    -d, --db_name=<db_name>                                 Name of mongodb database to save results. Only for mongoDB. [Default: annotation_db].
+    -n, --genome_name=<genome_name>                         Genome name. This will be used as main dictionary key to store the information of JSON.
+                                                            When converting to mongodb this will be used as collection name. [Default: Genome].
+    -p, --mongo_path=<mongo_path>                           Where to save your mongoDB? [Default: ./mongodb].
+                                                            If you insert a path that already have a mongoDB in it will include (append)
+                                                            the GFF as new collection (<genome_name>) in a new or existing DB (<db_name>).
 
                                                 Converting to FASTA or Genbank
 
@@ -57,10 +69,13 @@ from collections import namedtuple
 import gzip
 import urllib.request, urllib.parse, urllib.error
 import json
+import pymongo
+from pymongo import MongoClient
 from BCBio import GFF
 from Bio import SeqIO
 from io import StringIO
 import binascii
+import pathlib
 
 ######################################
 ### GFF columns names -- immutable ###
@@ -153,7 +168,7 @@ def gff2json(filename):
     final    = [] # Final list for JSON
 
     # Open
-    contents = gzip_opener(stdin_checker(filename), "w+t")
+    contents = gzip_opener(stdin_checker(filename), "rt")
 
     for line in contents:
         if line.startswith("#"): continue
@@ -187,8 +202,45 @@ def gff2json(filename):
 
     # json.dump(final, sys.stdout, indent=4)
     final = json.dumps(final, indent=4) # Converts to string
-    final = final.replace("[", "{").replace("]", "}")
-    print(final)
+    return final
+
+##########################
+### Convert to mongoDB ###
+##########################
+def gff2mongo(filename, db_name, collection_name, mongo_path):
+
+    # Start mongo
+    current = pathlib.Path().absolute()
+    os.system(f"mkdir -p {mongo_path} {mongo_path}/{db_name}")
+    os.system(f"cd {mongo_path} && mongod --dbpath {db_name} --logpath mongo_{collection_name}.log &")
+
+    # Create connection
+    client = MongoClient()
+
+    # Create Database
+    db = client[db_name]
+
+    # Create Collection
+    collection = db[collection_name]
+
+    # Save JSON as tmp.file
+    tmp = tempfile.NamedTemporaryFile(mode = "w+t", delete = False) # Create tmp file to work as input
+    temp_file = open(tmp.name, 'w+t')
+    for line in gff2json(filename).strip():
+        temp_file.writelines(f"{line}")
+
+    temp_file.seek(0)
+    input = tmp.name
+
+    # Add document to collection
+
+
+    contents = json.load(open(input))
+    collection.insert_many(contents)
+
+    # Close
+    client.close()
+    os.system(f"cd {current}")
 
 ########################
 ### Convert to FASTA ###
@@ -252,10 +304,13 @@ def gff2gbk(input, fasta, translation_table):
 ################
 ### Def main ###
 ################
-def convert(filename, format, fasta, fasta_features, translation_table):
+def convert(filename, format, fasta, fasta_features, translation_table, db_name, genome_name, mongo_path):
 
     if format == "json" :
-        gff2json(filename=filename)
+        print(gff2json(filename=filename).replace("[", "{").replace("]", "}"))
+
+    elif format == "mongodb" :
+        gff2mongo(filename=filename, db_name=db_name, collection_name=genome_name, mongo_path=mongo_path)
 
     elif format == "fasta-nt" or format == "fasta-aa":
         gff2fasta(input=filename, fasta=fasta, features=fasta_features,
