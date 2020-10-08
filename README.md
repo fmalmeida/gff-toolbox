@@ -14,7 +14,7 @@ gff-toolbox is a toolbox of commands that tries to facilitate the work with GFF 
 
 ## Requirements
 
-This pipeline has only one requirement:
+This pipeline has only two requirement:
 
 * Python >= 3.6, and its packages:
     * [pandas](https://pandas.pydata.org/)
@@ -23,6 +23,9 @@ This pipeline has only one requirement:
     * [dna features viewer](https://github.com/Edinburgh-Genome-Foundry/DnaFeaturesViewer)
     * [matplotlib](https://matplotlib.org/)
     * [docopt](http://docopt.org/)
+    * [pymongo](https://pypi.org/project/pymongo/)
+* [mongo shell](https://docs.mongodb.com/manual/)
+    * [In conda](https://anaconda.org/anaconda/mongodb)
 
 ## Installation
 
