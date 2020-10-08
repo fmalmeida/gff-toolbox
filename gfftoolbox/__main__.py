@@ -155,24 +155,6 @@ def main():
         else:
             print(usage_plot.strip())
 
-    #########################
-    ### Ask mongo command ###
-    #########################
-    elif arguments['<command>'] == 'ask-mongo':
-
-        # Parse docopt
-        args_mongo = docopt(usage_mongo, version=__version__, help=False)
-
-        if args_mongo['ask-mongo'] and args_mongo['--help']:
-            print(usage_mongo.strip())
-
-        ## Ask mongo dbs
-        elif args_mongo['ask-mongo'] and (args_mongo['--list_dbs'] or args_mongo['--list_collections']) and not args_mongo['--help']:
-            ask_mongo(list_dbs=args_mongo['--list_dbs'], db_name=args_mongo['--list_collections'])
-
-        else:
-            print(usage_mongo.strip())
-
     #####################
     ### Check license ###
     #####################

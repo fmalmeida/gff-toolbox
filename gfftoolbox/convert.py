@@ -21,7 +21,7 @@ options:
     -f, --format=<out_format>                               Convert to which format? Options: json, mongodb, fasta-nt, fasta-aa, genbank. [Default: genbank]
 
                                                 Converting to JSON and/or mongoDB
-                        Obs: converted dbs are automatically added to a db in localhost 27027 ... dependend of mongo shell"
+                        Obs: converted dbs are automatically added to a db in localhost 27027 ... dependent of mongo shell"
 
     -d, --db_name=<db_name>                                 Name of mongodb database to save results. Only for mongoDB. [Default: annotation_db].
     -n, --genome_name=<genome_name>                         Genome name. This will be used as main dictionary key to store the information of JSON.
@@ -45,6 +45,7 @@ $ gff-toolbox convert -i Kp_ref.gff -f json
 
     ## Converting a GFF to a mongoDB
     ## This will be added to a mongo db called <db_name> in a collection named <genome_name>
+    ## DBs are writen in the localhost 27027 mongo db connection of mongo shell
 
 $ gff-toolbox convert --format mongodb -i Kp_ref.gff
 
