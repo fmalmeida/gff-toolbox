@@ -52,7 +52,6 @@ from .filter import *
 from .version import *
 from .convert import *
 from .plot import *
-from .ask_mongo import *
 
 ## Defining main
 def main():

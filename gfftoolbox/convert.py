@@ -8,46 +8,46 @@ This command uses several python libraries to provide an easy way to convert you
 
 usage:
     gff-toolbox convert [ -h|--help ]
-    gff-toolbox convert [ --input <gff> --format json --genome_name <genome_name> ]
-    gff-toolbox convert [ --input <gff> --format mongodb --db_name <db_name> --genome_name <genome_name> --mongo_path <mongo_path> ]
-    gff-toolbox convert [ --input <gff> --format fasta --fasta <genome_file> --fasta_features <feature_types> --translation_table <int> ]
-    gff-toolbox convert [ --input <gff> --format genbank --fasta <genome_file> --translation_table <int> ]
+    gff-toolbox convert [ --input <gff> --fasta <genome_file> --translation_table <int> ] [ --format json|genbank ]
+    gff-toolbox convert [ --input <gff> --fasta <genome_file> --translation_table <int> ] [ --format fasta --fasta_features <feature_types> ]
+    gff-toolbox convert [ --input <gff> --fasta <genome_file> --translation_table <int> ] [--format mongodb --db_name <db_name> --genome_name <genome_name> --mongo_path <mongo_path> ]
 
 options:
-                                                      Mandatory
+                                                      General
 
     -h --help                                               Show this screen
     -i, --input=<gff>                                       Input GFF file. GFF file must not contain recuences with it. [Default: stdin].
     -f, --format=<out_format>                               Convert to which format? Options: json, mongodb, fasta-nt, fasta-aa, genbank. [Default: genbank]
+    --fasta=<genome_file>                                   Genomic fasta file to extract features from.
+    -t, --translation_table=<int>                           NCBI's translation table number. For converting nucleotide sequences to protein.
+                                                            Read more at https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi. [Default: 1]
 
-                                                Converting to JSON and/or mongoDB
+                                                Converting to mongoDB
                         Obs: converted dbs are automatically added to a db in localhost 27027 ... dependent of mongo shell"
 
     -d, --db_name=<db_name>                                 Name of mongodb database to save results. Only for mongoDB. [Default: annotation_db].
-    -n, --genome_name=<genome_name>                         Genome name. This will be used as main dictionary key to store the information of JSON.
-                                                            When converting to mongodb this will be used as collection name. [Default: Genome].
+    -n, --genome_name=<genome_name>                         When converting to mongodb this will be used as collection name. [Default: Genome].
     -p, --mongo_path=<mongo_path>                           Where to save your mongoDB? [Default: ./mongodb].
                                                             If you insert a path that already have a mongoDB in it will include (append)
                                                             the GFF as new collection (<genome_name>) in a new or existing DB (<db_name>).
 
-                                                Converting to FASTA or Genbank
+                                                Converting to FASTA
 
-    --fasta=<genome_file>                                   Genomic fasta file to extract features from.
     -l, --fasta_features=<feature_types>                    A comma separated list of feature types to extract. Must be identical as written in the GFF file. [Default: CDS]
-    -t, --translation_table=<int>                           NCBI's translation table number. For converting nucleotide sequences to protein.
-                                                            Read more at https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi. [Default: 1]
+
 
 example:
 
     ## Converting a GFF to JSON
+    ## without grabbing sequences from fasta
 
 $ gff-toolbox convert -i Kp_ref.gff -f json
 
-    ## Converting a GFF to a mongoDB
+    ## Converting a GFF to a mongoDB, grabbing sequences from fasta
     ## This will be added to a mongo db called <db_name> in a collection named <genome_name>
     ## DBs are writen in the localhost 27027 mongo db connection of mongo shell
 
-$ gff-toolbox convert --format mongodb -i Kp_ref.gff
+$ gff-toolbox convert --format mongodb -i Kp_ref.gff --fasta Kpneumoniae_genome.fasta -t 11
 
     ## Get CDS sequences from GFF to protein fasta
 
@@ -169,7 +169,10 @@ def _flatten_features(rec):
 #######################
 ### Convert to JSON ###
 #######################
-def gff2json(filename):
+def gff2json(filename, fasta, translation_table):
+
+    if fasta != None:
+        genome = SeqIO.to_dict(SeqIO.parse(gzip_opener(fasta, "rt"), "fasta"))
 
     gff_dict = {} # Initialize gff as dict
     final    = [] # Final list for JSON
@@ -192,29 +195,65 @@ def gff2json(filename):
         strand     = parts[6]
         phase      = parts[7]
         attributes = att_to_dict(parts[8])
-        gff_dict = {
-            # "CDS" : attributes[0],
-            "recid"     : rec,
-            "source"    : source,
-            "type"      : feature,
-            "start"     : start,
-            "end"       : end,
-            "score"     : score,
-            "strand"    : strand,
-            "phase"     : phase,
-            "attributes": attributes
-        }
+
+        if not bool(re.search("region", str(feature.lower()))):
+
+            # Check sequence
+            if fasta != None:
+                contig = genome[rec].seq
+                seq    = contig[int(start)-1:int(end)] # the first base in biopython is 0, therefore we must diminish the start
+                if bool(re.search("cds|protein", str(feature.lower()))):
+                    ft_seq = seq.translate(table=translation_table)
+                else:
+                    ft_seq = seq
+
+                gff_dict = {
+                    "recid"     : rec,
+                    "source"    : source,
+                    "type"      : feature,
+                    "start"     : start,
+                    "end"       : end,
+                    "score"     : score,
+                    "strand"    : strand,
+                    "phase"     : phase,
+                    "attributes": attributes,
+                    "sequence"  : str(ft_seq)
+                }
+            else:
+                gff_dict = {
+                    "recid"     : rec,
+                    "source"    : source,
+                    "type"      : feature,
+                    "start"     : start,
+                    "end"       : end,
+                    "score"     : score,
+                    "strand"    : strand,
+                    "phase"     : phase,
+                    "attributes": attributes
+                }
+        else:
+            gff_dict = {
+                "recid"     : rec,
+                "source"    : source,
+                "type"      : feature,
+                "start"     : start,
+                "end"       : end,
+                "score"     : score,
+                "strand"    : strand,
+                "phase"     : phase,
+                "attributes": attributes
+            }
+
 
         final.append(gff_dict)
 
-    # json.dump(final, sys.stdout, indent=4)
     final = json.dumps(final, indent=4) # Converts to string
     return final
 
 ##########################
 ### Convert to mongoDB ###
 ##########################
-def gff2mongo(filename, db_name, collection_name, mongo_path):
+def gff2mongo(filename, db_name, collection_name, mongo_path, fasta, translation_table):
 
     # Start mongo
     current = pathlib.Path().absolute()
@@ -233,15 +272,13 @@ def gff2mongo(filename, db_name, collection_name, mongo_path):
     # Save JSON as tmp.file
     tmp = tempfile.NamedTemporaryFile(mode = "w+t", delete = False) # Create tmp file to work as input
     temp_file = open(tmp.name, 'w+t')
-    for line in gff2json(filename).strip():
+    for line in gff2json(filename=filename, fasta=fasta, translation_table=translation_table).strip():
         temp_file.writelines(f"{line}")
 
     temp_file.seek(0)
     input = tmp.name
 
     # Add document to collection
-
-
     contents = json.load(open(input))
     collection.insert_many(contents)
 
@@ -314,10 +351,11 @@ def gff2gbk(input, fasta, translation_table):
 def convert(filename, format, fasta, fasta_features, translation_table, db_name, genome_name, mongo_path):
 
     if format == "json" :
-        print(gff2json(filename=filename).replace("[", "{").replace("]", "}"))
+        print(gff2json(filename=filename, fasta=fasta, translation_table=translation_table).replace("[", "{").replace("]", "}"))
 
     elif format == "mongodb" :
-        gff2mongo(filename=filename, db_name=db_name, collection_name=genome_name, mongo_path=mongo_path)
+        gff2mongo(filename=filename, db_name=db_name, collection_name=genome_name, mongo_path=mongo_path,
+                  fasta=fasta, translation_table=translation_table)
 
     elif format == "fasta-nt" or format == "fasta-aa":
         gff2fasta(input=filename, fasta=fasta, features=fasta_features,
