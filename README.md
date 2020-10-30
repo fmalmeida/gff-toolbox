@@ -29,6 +29,8 @@ This pipeline has only two requirement:
 
 ## Installation
 
+### Via github
+
 Installation is super easy and perhaps not required:
 
 ```bash
@@ -42,6 +44,13 @@ python3 gfftoolbox-runner.py -h
 # Install and run in any place
 python3 setup.py install
 gff-toolbox -h
+```
+
+### Via conda
+
+```bash
+# Get the conda package
+conda install -c falmeida gff-toolbox
 ```
 
 ## Documentation
