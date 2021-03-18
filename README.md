@@ -2,6 +2,8 @@
 <img src="https://github.com/fmalmeida/gff-toolbox/raw/master/images/GFF_ToolBox.png" alt="logo" width="500px"/>
 </p>
 
+![](https://anaconda.org/falmeida/gff-toolbox/badges/version.svg) ![](https://anaconda.org/falmeida/gff-toolbox/badges/latest_release_date.svg) ![](https://anaconda.org/falmeida/gff-toolbox/badges/platforms.svg) ![](https://anaconda.org/falmeida/gff-toolbox/badges/installer/conda.svg)
+
 gff-toolbox is a toolbox of commands that tries to facilitate the work with GFF annotation files.
 
 ## Table of contents
@@ -29,6 +31,8 @@ This pipeline has only two requirement:
 
 ## Installation
 
+### Via github
+
 Installation is super easy and perhaps not required:
 
 ```bash
@@ -42,6 +46,13 @@ python3 gfftoolbox-runner.py -h
 # Install and run in any place
 python3 setup.py install
 gff-toolbox -h
+```
+
+### Via conda
+
+```bash
+# Get the conda package
+conda install -c falmeida gff-toolbox
 ```
 
 ## Documentation

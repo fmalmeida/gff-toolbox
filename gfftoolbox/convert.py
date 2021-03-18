@@ -43,6 +43,11 @@ example:
 
 $ gff-toolbox convert -i Kp_ref.gff -f json
 
+    ## Converting a GFF to JSON
+    ## grabbing sequences from fasta
+
+$ gff-toolbox convert -i Kp_ref.gff -f json --fasta Kpneumoniae_genome.fasta
+
     ## Converting a GFF to a mongoDB, grabbing sequences from fasta
     ## This will be added to a mongo db called <db_name> in a collection named <genome_name>
     ## DBs are writen in the localhost 27027 mongo db connection of mongo shell
