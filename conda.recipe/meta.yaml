@@ -22,7 +22,7 @@ requirements:
     - setuptools
     - setuptools-git
     - pandas
-    - biopython
+    - biopython==1.78
     - docopt
     - pprintpp
     - bcbio-gff
