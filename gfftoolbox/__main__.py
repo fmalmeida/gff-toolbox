@@ -33,6 +33,7 @@ commands:
     filter                                                  It lets you filter your GFF based on one or multiple patterns
     convert                                                 Converts a GFF file into another formats
     plot                                                    Useful command to plot genomic regions from a GFF file
+    mongo-ingest                                            Useful command to plot genomic regions from a GFF file
 
 Use: `gff-toolbox <commmand> -h` to get more help and see examples.
 """
@@ -52,6 +53,7 @@ from .filter import *
 from .version import *
 from .convert import *
 from .plot import *
+from .ingest import *
 
 ## Defining main
 def main():
@@ -63,10 +65,10 @@ def main():
     ### GFF overview command ###
     ############################
     if arguments['<command>'] == 'overview':
-
+        
         # Parse docopt
         args_overview = docopt(usage_overview, version=__version__, help=False)
-
+        
         if args_overview['overview'] and args_overview['--help']:
             print(usage_overview.strip())
 
@@ -119,6 +121,27 @@ def main():
 
         else:
             print(usage_convert.strip())
+
+    ###########################
+    ### GFF ingest command ###
+    ###########################
+    elif arguments['<command>'] == 'mongo-ingest':
+
+        # Parse docopt
+        args_ingest = docopt(usage_ingest, version=__version__, help=False)
+
+        if args_ingest['mongo-ingest'] and args_ingest['--help']:
+            print(usage_ingest.strip())
+
+        ## Run it
+        elif args_ingest['mongo-ingest'] and args_ingest['--input'] and args_ingest['--db_name'] and not args_ingest['--help']:
+            
+            ingestAttributes(filename=args_ingest['--input'], feature_type=args_ingest['--gff_feature'],
+             db_name=args_ingest['--db_name'], collection_name=args_ingest['--genome_name'],
+              mongo_path=args_ingest['--mongo_path'], has_header=True)
+
+        else:
+            print(usage_ingest.strip())
 
     ########################
     ### GFF plot command ###
