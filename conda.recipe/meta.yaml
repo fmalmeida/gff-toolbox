@@ -1,6 +1,6 @@
 package:
   name: gff-toolbox
-  version: 0.1_alpha
+  version: 0.2
 
 source:
   path: ..
