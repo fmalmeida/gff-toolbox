@@ -16,6 +16,16 @@ requirements:
   build:
     - python >=3.7,{{PY_VER}}*
     - setuptools
+    - setuptools-git
+    - pandas
+    - biopython==1.78
+    - docopt
+    - pprintpp
+    - bcbio-gff
+    - matplotlib
+    - pymongo
+    - dna_features_viewer
+    - mongodb
 
   run:
     - python {{PY_VER}}*
