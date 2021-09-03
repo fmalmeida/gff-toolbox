@@ -179,8 +179,16 @@ def single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_
                     strand=-1
 
                 ## Label not in the gene plot
-                input= GraphicFeature(start=int(rec.features[i].location.start), end=int(rec.features[i].location.end),
-                                      strand=int(strand), label=str(rec.features[i].qualifiers[qualifier][0]), color=coloring)
+                    if (qualifier in rec.features[i].qualifiers):
+                        if (rec.features[i].qualifiers[qualifier][0] == "true"):
+                            input= GraphicFeature(start=int(rec.features[i].location.start), end=int(rec.features[i].location.end),
+                                                  strand=int(strand), color=coloring)
+                        else: 
+                            input = GraphicFeature(start=int(rec.features[i].location.start), end=int(rec.features[i].location.end),
+                                            strand=int(strand), label=str(rec.features[i].qualifiers[qualifier][0]), color=coloring)
+                    else:
+                        input= GraphicFeature(start=int(rec.features[i].location.start), end=int(rec.features[i].location.end),
+                                          strand=int(strand), color=coloring)
 
                 # Append
                 features.append(input)
@@ -242,8 +250,16 @@ def multiple_gff(input_fofn, start, end, contig, qualifier, feature, outfile, pl
                         strand=-1
 
                     ## Label not in the gene plot
-                    input= GraphicFeature(start=int(rec.features[i].location.start), end=int(rec.features[i].location.end),
-                                          strand=int(strand), label=str(rec.features[i].qualifiers[qualifier][0]), color=coloring)
+                    if (qualifier in rec.features[i].qualifiers):
+                        if (rec.features[i].qualifiers[qualifier][0] == "true"):
+                            input= GraphicFeature(start=int(rec.features[i].location.start), end=int(rec.features[i].location.end),
+                                                  strand=int(strand), color=coloring)
+                        else: 
+                            input = GraphicFeature(start=int(rec.features[i].location.start), end=int(rec.features[i].location.end),
+                                            strand=int(strand), label=str(rec.features[i].qualifiers[qualifier][0]), color=coloring)
+                    else:
+                        input= GraphicFeature(start=int(rec.features[i].location.start), end=int(rec.features[i].location.end),
+                                          strand=int(strand), color=coloring)
 
                     # Append DNA features plot
                     features.append(input)
