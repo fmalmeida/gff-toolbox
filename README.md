@@ -52,7 +52,7 @@ gff-toolbox -h
 
 ```bash
 # Get the conda package
-conda install -c falmeida gff-toolbox
+conda create -n gff-toolbox -c conda-forge -c bioconda -c anaconda -c defaults -c falmeida gff-toolbox
 ```
 
 ## Documentation

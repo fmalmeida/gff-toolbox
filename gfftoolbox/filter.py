@@ -14,65 +14,68 @@ usage:
 
 options:
 
-                                                Generic parameters
+                                            ## Generic parameters
 
-    -h --help                                               Show this screen.
+    -h --help                               Show this screen.
 
-    -i, --input=<gff>                                       Input GFF file. GFF file must not contain sequences, only features [Default: stdin].
+    -i, --input=<gff>                       Input GFF file. GFF file must not contain sequences, only features [Default: stdin].
 
-    -m, --mode=<search_mode>                                In which mode to search for patterns: loose or exact?
-                                                            The loose mode, scans the GFF in a grep-like manner via pandas dataframes in which the user must specify
-                                                            a pattern and a column to search it. Recommended for simple searches were nest structure is not a must.
-                                                            The exact mode scans the GFF with Biopython and BCBio packages, treating it as python dictionary. It is
-                                                            recommended for more complex searches and complex GFFs, such as nested GFFs. [Default: exact]
+    -m, --mode=<search_mode>                In which mode to search for patterns: loose or exact?
+                                            The loose mode, scans the GFF in a grep-like manner via pandas dataframes in which the user must specify
+                                            a pattern and a column to search it. Recommended for simple searches were nest structure is not a must.
+                                            The exact mode scans the GFF with Biopython and BCBio packages, treating it as python dictionary. It is
+                                            recommended for more complex searches and complex GFFs, such as nested GFFs. [Default: exact]
+                                                
+                                            ## Filter for BOTH modes
 
-    --strand=<strand>                                       Apply a filter based on the strand of the feature. Options: plus or minus. By default, everything is given.
-                                                            In exact mode, this filter is applied in the parent feature, if it passes, it's children are also printed.
-                                                            The contrary is also true. In the loose mode it is applied directly to all features, nested or not.
+    --strand=<strand>                       Apply a filter based on the strand of the feature. Options: plus or minus. By default, everything is given.
+                                            In exact mode, this filter is applied in the parent feature, if it passes, it's children are also printed.
+                                            The contrary is also true. In the loose mode it is applied directly to all features, nested or not.
 
-    --start=<start_position>                                Apply a filter to select features starting from this position. In exact mode, this filter is applied in the
-                                                            parent feature, if it passes, it's children are also printed. The contrary is also true. In the loose mode
-                                                            it is applied directly to all features, nested or not.
+    --start=<start_position>                Apply a filter to select features starting from this position. In exact mode, this filter is applied in the
+                                            parent feature, if it passes, it's children are also printed. The contrary is also true. In the loose mode
+                                            it is applied directly to all features, nested or not.
 
-    --end=<end_position>                                    Apply a filter to select features until this position. In exact mode, this filter is applied in the parent
-                                                            feature, if it passes, it's children are also printed. The contrary is also true.
+    --end=<end_position>                    Apply a filter to select features until this position. In exact mode, this filter is applied in the parent
+                                            feature, if it passes, it's children are also printed. The contrary is also true.
 
-                                                Loose search mode parameters (Handy in general cases)
+                                    ## Loose search mode parameters (Handy in general cases)
 
-    -c, --column=<int>                                      Apply pattern search in which GFF columns?. [Default: 9]
+    -c, --column=<int>                      Apply pattern search in which GFF columns?. [Default: 9]
 
-    -p, --pattern=<string>                                  Pattern to search in the GFF file. Can be a list of patterns separated by commas.
+    -p, --pattern=<string>                  Pattern to search in the GFF file. Can be a list of patterns separated by commas.
+                                            Must be used with the loose mode.
 
-    --sort                                                  Sort the GFF by the contig and start position. Be aware, it can disorganize nested gffs.
+    --sort                                  Sort the GFF by the contig and start position. Be aware, it can disorganize nested gffs.
 
-    --header                                                Print GFF header (##gff-version 3)? Some programs require this header.
+    --header                                Print GFF header (##gff-version 3)? Some programs require this header.
 
-                                                Exact search mode parameters (Very useful for nested GFFs)
+                                    ## Exact search mode parameters (Very useful for nested GFFs)
 
-    --chr=<chr_limits>                                      Apply a filter based on the chr/contig/sequence ids (Column 1). Can be a list of patterns separated by commas.
-                                                            This step only works using the complete string for full-matches (it does not work with partial-matches based
-                                                            substrings of the desired pattern).
+    --chr=<chr_limits>                      Apply a filter based on the chr/contig/sequence ids (Column 1). Can be a list of 
+                                            patterns separated by commas. This step only works using the complete string for 
+                                            full-matches (it does not work with partial-matches based substrings).
 
-    --source=<source_limits>                                Apply a filter based on the source column (Column 2). Can be a list of patterns separated by commas.
-                                                            This step works using the complete string (with full-matches) or substrings of the desired pattern,
-                                                            working with partial-matches.
+    --source=<source_limits>                Apply a filter based on the source column (Column 2). Can be a list of patterns separated by commas.
+                                            This step works using the complete string (with full-matches) or substrings of the desired pattern,
+                                            working with partial-matches.
 
-    --type=<type_limits>                                    Apply a filter based on the type column (Column 3). Can be a list of patterns separated by commas.
-                                                            This step works using the complete string (with full-matches) or substrings of the desired pattern,
-                                                            working with partial-matches. In the loose mode it is applied directly to all features, nested or not.
+    --type=<type_limits>                    Apply a filter based on the type column (Column 3). Can be a list of patterns separated by commas.
+                                            This step works using the complete string (with full-matches) or substrings of the desired pattern,
+                                            working with partial-matches. In the loose mode it is applied directly to all features, nested or not.
 
-    --attributes=<file_with_attributes>                     Pass a file containing the desired key/value tuple to search in the 9th column. The header of the file is the
-                                                            attribute key in which to search for the values given in the following it. Since it maintains the nest and
-                                                            organization of the file, it is useful for filtering nested GFFs based on a list of genes, parents or products.
-                                                            The maintainence of the nest structure would be difficult to have with simpler commands such as `grep -f filep`
-                                                            since children and parents seldom have the same attribute keys.
+    --attributes=<file_with_attributes>     Pass a file containing the desired key/value tuple to search in the 9th column. The header of the file is the
+                                            attribute key in which to search for the values given in the following it. Since it maintains the nest and
+                                            organization of the file, it is useful for filtering nested GFFs based on a list of genes, parents or products.
+                                            The maintainence of the nest structure would be difficult to have with simpler commands such as `grep -f filep`
+                                            since children and parents seldom have the same attribute keys.
 
-                                                            This file must a header starting with '##', whithout space and its values following it. E.g.:
+                                                    This file must a header starting with '##', whithout space and its values following it. E.g.:
 
-                                                                    ##ID
-                                                                    desired gene id 1
-                                                                    desired gene id 2
-                                                                    ...
+                                                            ##ID
+                                                            desired gene id 1
+                                                            desired gene id 2
+                                                            ...
 
 
 example:
@@ -490,8 +493,12 @@ def filter_exact_mode(input_gff, chr_limits, source_limits, type_limits, start_p
 ################
 def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_limits, type_limits, start_pos, end_pos, strand, att_file):
 
+    # Check for error
+    if mode == "exact" and pattern != None:
+        print(f"""\n-> Error: -p (pattern) must be used with --mode loose.""")
+
     # Simple filter
-    if mode == "loose":
+    elif mode == "loose":
         filter_loose_mode(input_gff=input_gff, column=column, pattern=pattern, sort=sort, header=header,
                           start_pos=start_pos, end_pos=end_pos, strand=strand)
 
@@ -502,6 +509,4 @@ def filter(input_gff, column, pattern, sort, header, mode, chr_limits, source_li
 
     # Error
     else:
-        print(f"""
-Error: --mode must be either 'loose' or 'exact'. {mode} is incorrect.
-        """)
+        print(f"""\n-> Error: --mode must be either 'loose' or 'exact'. {mode} is incorrect.""")
