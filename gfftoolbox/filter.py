@@ -13,8 +13,9 @@ usage:
     gff-toolbox filter [ --mode exact ] [ --input <gff> ] [ --chr <chr_limits> --source <source_limits> --type <type_limits> --start <start_position> --end <end_position> --strand <strand> --attributes <file_with_attributes> ]
 
 options:
-
-                                            ## Generic parameters
+                                    ##########################
+                                    ### Generic parameters ###
+                                    ##########################
 
     -h --help                               Show this screen.
 
@@ -26,7 +27,9 @@ options:
                                             The exact mode scans the GFF with Biopython and BCBio packages, treating it as python dictionary. It is
                                             recommended for more complex searches and complex GFFs, such as nested GFFs. [Default: exact]
                                                 
-                                            ## Filter for BOTH modes
+                                    #############################
+                                    ### Filter for BOTH modes ###
+                                    #############################
 
     --strand=<strand>                       Apply a filter based on the strand of the feature. Options: plus or minus. By default, everything is given.
                                             In exact mode, this filter is applied in the parent feature, if it passes, it's children are also printed.
@@ -39,7 +42,9 @@ options:
     --end=<end_position>                    Apply a filter to select features until this position. In exact mode, this filter is applied in the parent
                                             feature, if it passes, it's children are also printed. The contrary is also true.
 
-                                    ## Loose search mode parameters (Handy in general cases)
+                                    #############################################################
+                                    ### Loose search mode parameters (Handy in general cases) ###
+                                    #############################################################
 
     -c, --column=<int>                      Apply pattern search in which GFF columns?. [Default: 9]
 
@@ -50,7 +55,9 @@ options:
 
     --header                                Print GFF header (##gff-version 3)? Some programs require this header.
 
-                                    ## Exact search mode parameters (Very useful for nested GFFs)
+                                    ##################################################################
+                                    ### Exact search mode parameters (Very useful for nested GFFs) ###
+                                    ##################################################################
 
     --chr=<chr_limits>                      Apply a filter based on the chr/contig/sequence ids (Column 1). Can be a list of 
                                             patterns separated by commas. This step only works using the complete string for 
