@@ -50,7 +50,8 @@ options:
 
     --height=<height>                       Plot height ratio. [Default: 5].
 
-    -o, --output=<png_out>                  Output PNG filename. [Default: ./out.png].
+    -o, --output=<png_out>                  Output SVG/PNG filename. [Default: ./out.png].
+                                            You can output SVG with: "-o out.svg"
 
 example:
 
