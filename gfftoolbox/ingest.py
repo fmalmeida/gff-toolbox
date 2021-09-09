@@ -11,7 +11,7 @@ usage:
     gff-toolbox mongo-ingest -h | --help
 
 options:
-    -h, --help                                              Show this screen
+    -h, --help                                              Show this screen.
     -i, --input=<tsv>                                       Annotation file in TSV (tab-separated values) format describing, for each line, the gff feature
                                                             (default: gene, can be changed in parameter --gff_feature) id and
                                                             corresponding annotations that should be included in mongodb database.
