@@ -4,10 +4,11 @@ gff-toolbox:
 
             Mongo-ingest
 
-This command uses several python libraries to provide an easy way to convert your GFF data
+This command add annotations into an already created GFF mongo database.
 
 usage:
-    gff-toolbox mongo-ingest [ -h|--help ] [ --input <tsv> ] [--gff_feature gene --db_name <db_name> --genome_name <genome_name> --mongo_path <mongo_path> ]
+    gff-toolbox mongo-ingest --input <tsv> [--gff_feature gene --db_name <db_name> --genome_name <genome_name> --mongo_path <mongo_path> ]
+    gff-toolbox mongo-ingest -h | --help
 
 options:
     -h, --help                                              Show this screen
@@ -26,13 +27,16 @@ options:
 
 example:
 
-    ## Converting a GFF to a mongoDB and updating annotation for genes listed in gene.functions.txt file
-    ## This will be added to a mongo db called <db_name> in a collection named <genome_name>
-    ## DBs are writen in the localhost 27027 mongo db connection of mongo shell
+    ## Create a mongo database from a GFF, if it doesnt exist yet
+    ## This will create the GFF mongodb collection named <genome_name> in mongodb <db_name>
+    ## DBs are writen in the localhost 27027 mongo db connection of mongo shell    
 
-$ gff-toolbox convert --format mongodb -i Kp_ref.gff -n Kp
+    $ gff-toolbox convert --format mongodb -i Kp_ref.gff --genome_name Kp
 
-$ gff-toolbox mongo-ingest -i gene.functions.txt -n Kp
+    ## Next, include annotations written in gene.functions.txt file to corresponding
+    ## gene features in existing GFF mongo collection Kp
+
+    $ gff-toolbox mongo-ingest -i gene.functions.tsv -n Kp
 
 """
 
@@ -51,8 +55,6 @@ import json
 import pymongo
 from pymongo import MongoClient
 from pymongo import collection
-from BCBio import GFF
-from Bio import SeqIO
 from io import StringIO
 import binascii
 import pathlib

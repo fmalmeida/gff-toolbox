@@ -1,4 +1,4 @@
-##ID	Id	IdType	description
+FeatureId	AnnotId	IdType	Description
 gene-KPHS_00170	PTHR30520:SF0	PANTHER	TRANSPORTER-RELATED
 gene-KPHS_00170	GO:0006810	GO	transport
 gene-KPHS_00170	3.4.16.2	EC	Lysosomal Pro-Xaa carboxypeptidase

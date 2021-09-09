@@ -33,7 +33,7 @@ commands:
     filter                                                  It lets you filter your GFF based on one or multiple patterns
     convert                                                 Converts a GFF file into another formats
     plot                                                    Useful command to plot genomic regions from a GFF file
-    mongo-ingest                                            Useful command to plot genomic regions from a GFF file
+    mongo-ingest                                            Useful to include new or update annotations in existing GFF mongo databases
 
 Use: `gff-toolbox <commmand> -h` to get more help and see examples.
 """
