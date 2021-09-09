@@ -1,0 +1,7 @@
+FeatureId	AnnotId	IdType	Description
+gene-KPHS_00170	PTHR30520:SF0	PANTHER	TRANSPORTER-RELATED
+gene-KPHS_00170	GO:0006810	GO	transport
+gene-KPHS_00170	3.4.16.2	EC	Lysosomal Pro-Xaa carboxypeptidase
+gene-KPHS_00170	GO:0005215	GO	transporter activity
+gene-KPHS_02590	GO:0003735	GO	structural constituent of ribosome
+gene-KPHS_02590	PTHR36029	PANTHER	

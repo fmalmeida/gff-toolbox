@@ -103,7 +103,17 @@ def att_to_dict(attributes):
     for atts in attributes.split(";"):
         try:
             key, value = atts.split("=")
-            final[key] = value.strip()
+            if key == "Dbxref" or key=="Ontology_terms":
+                try:
+                    values = [{"DBTAG": x.split(":")[0], "ID": x.split(":")[1]} for x in value.strip().split(",")]
+                    final[key] = values
+                except ValueError:
+                    print(f"The field Dbxref or Ontology_terms are not in format specified by GFF standards. Problem in {atts}.")
+            else:
+                if len(value.strip().split(",")) == 1:
+                    final[key] = value.strip().split(",")[0]
+                else:
+                    final[key] = value.strip().split(",")
         except ValueError:
             print(f"Can't split attributes. Problem in {atts}")
             break
