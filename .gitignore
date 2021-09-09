@@ -4,3 +4,4 @@ gff_toolbox.egg-info/
 gfftoolbox/__pycache__/
 annotation_db/
 mongo_Genome.log*
+.vscode
