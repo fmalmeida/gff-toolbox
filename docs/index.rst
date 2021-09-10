@@ -35,6 +35,7 @@ To date, its main steps are:
    installation
    overview
    convert
+   filter
 
 Support Contact
 ===============
