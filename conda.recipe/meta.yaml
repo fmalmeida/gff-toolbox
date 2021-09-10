@@ -26,6 +26,15 @@ requirements:
     - pymongo
     - dna_features_viewer
     - mongodb
+    - pyfaidx
+    - bioconductor-karyoploter
+    - bioconductor-rtracklayer
+    - bioconductor-genomicranges
+    - bioconductor-plyranges
+    - r-dplyr
+    - r
+    - r-base
+    - r-docopt
 
   run:
     - python {{PY_VER}}*
@@ -40,11 +49,22 @@ requirements:
     - pymongo
     - dna_features_viewer
     - mongodb
+    - pyfaidx
+    - bioconductor-karyoploter
+    - bioconductor-rtracklayer
+    - bioconductor-genomicranges
+    - bioconductor-plyranges
+    - r-dplyr
+    - r
+    - r-base
+    - r-docopt
 
 channels:
+  - defaults
   - anaconda
   - conda-forge
   - bioconda
+  - r
 
 about:
   home: https://github.com/fmalmeida/gff-toolbox
