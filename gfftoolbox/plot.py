@@ -9,9 +9,15 @@ Enabling the visualization of a genomic region from a GFF using the DNA features
 usage:
     gff-toolbox plot -h|--help
     gff-toolbox plot check-gff [ --input <gff> ]
-    gff-toolbox plot [ --input <gff> | --fofn <file> ] ( --contig <contig_name> ) [ --start <start_base> --end <end_base> --feature <feature_type> --identification <id> --title <title> --label <label> --color <color> --output <png_out> --width <width> --height <height> ]
+    gff-toolbox plot --plot features ( --contig <contig_name> ) [ --input <gff> | --fofn <file> ] [ --start <start_base> --end <end_base> --feature <feature_type> --identification <id> --title <title> --label <label> --color <color> --output <png_out> --width <width> --height <height> ]
+    gff-toolbox plot --plot ideogram ( --ref_fasta <ref_fasta> ) [ --input <gff> --feature <feature_type> --chr_minsize <int> --chr_maxsize <int> --title <title> --width <width> --height <height> ]
 
 options:
+
+                                ###############
+                                ### General ###
+                                ###############
+
     -h --help                               Show this screen.
 
     -v --version                            Show version information.
@@ -19,6 +25,10 @@ options:
     check-gff                               Does a simple parsing of the GFF file so the user knows the available qualifiers that
                                             can be used as gene identifiers. GFF qualifiers are retrieved from the 9th column.
                                             Same as gff-toolbox overview command.
+                                
+                                ##############
+                                ### Inputs ###
+                                ##############
 
     -i, --input=<gff>                       Used to plot dna features from a single GFF file [Default: stdin].
 
@@ -27,24 +37,13 @@ options:
                                             Useful to compare annotations and to plot features with different colors if you separate them into multiple
                                             gff files each containing one type of feature.
 
-    --start=<start_base>                    Starting position for plotting. [Default: 1].
-
-    --end=<end_base>                        Ending position for plotting. [Default: 500].
-
-    --contig=<contig_name>                  Name of the contig which you want to plot.
-
-    --identification=<id>                   Which GFF qualifier must be used as gene identification to write in the plot?
-                                            Please check for available qualifiers with 'check-gff'. Must be the exact name
-                                            of the key found in the attributes columns. [Default: ID].
+                                ################################
+                                ### Definitions for any plot ###
+                                ################################
+                            
+    -p, --plot=<plot_type>                  Which plot type to draw? Options: features;ideogram. [Default: features].
 
     -t, --title=<title>                     Legend/plot title. [Default: Gene Plot].
-
-    -l, --label=<label>                     Custom label for plotting features. This is the string that appears in the legend. [Default: Gene].
-
-    --feature=<feature_type>                Type of the GFF feature (3rd column) which you want to plot. It is possible to set more than one feature to be
-                                            plotted by giving it separated by commas, eg. CDS,rRNA. [Default: gene].
-
-    --color=<color>                         HEX entry for desired plotting color. [Default: #ccccff].
 
     --width=<width>                         Plot width ratio. [Default: 20].
 
@@ -52,6 +51,38 @@ options:
 
     -o, --output=<png_out>                  Output SVG/PNG filename. [Default: ./out.png].
                                             You can output SVG with: "-o out.svg"
+    
+    --feature=<feature_type>                Type of the GFF feature (3rd column) which you want to plot. It is possible to set more than one feature to be
+                                            plotted by giving it separated by commas, eg. CDS,rRNA.
+
+                                #####################################
+                                ### Definitions for features plot ###
+                                #####################################
+
+    --start=<start_base>                    Starting position for plotting. [Default: 1].
+
+    --end=<end_base>                        Ending position for plotting. [Default: 500].
+
+    --contig=<contig_name>                  Name of the contig that you want to plot. Required for the features plot.
+
+    --identification=<id>                   Which GFF qualifier must be used as gene identification to write in the plot?
+                                            Please check for available qualifiers with 'check-gff'. Must be the exact name
+                                            of the key found in the attributes columns. [Default: ID].
+
+    -l, --label=<label>                     Custom label for plotting features. This is the string that appears in the legend. [Default: Gene].
+
+    --color=<color>                         HEX entry for desired plotting color. [Default: #ccccff].
+
+                                #####################################
+                                ### Definitions for ideogram plot ###
+                                #####################################
+    
+    --ref_fasta=<ref_fasta>                 FASTA file to be used as reference when plotting the karyotypes. Sequence chrs in FASTA and 
+                                            the GFF must be related (same name).
+    
+    --chr_minsize=<int>                     Min. size of contigs to plot. [Default: 1]
+
+    --chr_maxsize=<int>                     Max. size of contigs to plot.
 
 example:
 
@@ -87,6 +118,9 @@ import binascii
 import gzip
 import tempfile
 import sys
+import subprocess
+import os
+import re
 
 ###################
 ### Stdin Check ###
@@ -116,7 +150,6 @@ def gzip_opener(input, mode_in):
     else:
         return open(input, mode=mode_in)
 
-
 ##################################################
 ### Function for checking available qualifiers ###
 ##################################################
@@ -142,11 +175,12 @@ def check_gff(infile):
         print("\nPlease select only one of the available qualifiers to be used as gene identification!")
         exit()
 
-######################################################
-### Function for execution with a single GFF input ###
-######################################################
+####################################
+### Functions for features plots ###
+####################################
 
-def single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_label, outfile, plot_title, plot_width, plot_height):
+# Single GFF
+def features_single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_label, outfile, plot_title, plot_width, plot_height):
 
     # Stdin check
     sys_contents = ""
@@ -156,10 +190,10 @@ def single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_
         pass
 
     # Subset GFF based on chr and feature type
-    limit_info = dict(
-            gff_id   = [contig],
-            gff_type = list(feature.split(','))
-    )
+    limit_info = dict()
+    limit_info["gff_id"] = [contig]
+    if feature != None:
+        limit_info['gff_type'] = list(feature.split(','))
 
     # Create empty features and legened list
     features = []
@@ -203,13 +237,8 @@ def single_gff(infile, start, end, contig, feature, qualifier, coloring, custom_
                        loc = 1, title=plot_title, fontsize = 'medium', fancybox = True)
     ax.figure.savefig(outfile, bbox_inches='tight')
 
-
-
-#######################################################
-### Function for execution with multiple GFF inputs ###
-#######################################################
-
-def multiple_gff(input_fofn, start, end, contig, qualifier, feature, outfile, plot_title, plot_width, plot_height):
+# Multiple GFFs
+def features_multiple_gff(input_fofn, start, end, contig, qualifier, feature, outfile, plot_title, plot_width, plot_height):
 
     # Open list of filenames containing GFFs
     file = open(input_fofn, 'r')
@@ -227,10 +256,10 @@ def multiple_gff(input_fofn, start, end, contig, qualifier, feature, outfile, pl
         coloring  = data[2]
 
         # Subset GFF based on chr and feature type
-        limit_info = dict(
-                gff_id   = [contig],
-                gff_type = list(feature.split(','))
-        )
+        limit_info = dict()
+        limit_info["gff_id"] = [contig]
+        if feature != None:
+            limit_info['gff_type'] = list(feature.split(','))
 
         # Load GFF and its sequences
         gff = GFF.parse(gzip_opener(infile, "rt"), limit_info=limit_info)
@@ -277,3 +306,63 @@ def multiple_gff(input_fofn, start, end, contig, qualifier, feature, outfile, pl
     ## Label not in the gene plot (using separate legend box)
     legend = ax.legend(handles=legend_entries, loc = 1, title=plot_title, fontsize = 'medium', fancybox = True)
     ax.figure.savefig(outfile, bbox_inches='tight')
+
+####################################
+### Functions for ideogram plots ###
+####################################
+def generate_bed(infasta):
+    subprocess.call(f"faidx --no-output {infasta}", shell=True)
+    subprocess.call(f"awk '{{ print $1 \"\t\" 1 \"\t\" $2 }}' {infasta}.fai > chr.bed", shell=True)
+
+def generate_yaml(chr_minsize, chr_maxsize, width, height, plot_title, outfile):
+    yaml_path=f"{os.path.dirname(__file__)}/../conda.recipe/bin/karyoploteR_config.yml"
+    with open(yaml_path, "r") as sources:
+        lines = sources.readlines()
+    with open('./karyoploteR_config.yml', "w") as sources:
+        for line in lines:
+            line = re.sub(r'minimap2_karyoploteR.svg', f"{outfile}", line)
+            line = re.sub(r'.png', ".svg", line)
+            if (chr_maxsize != None):
+                line = re.sub(r'chr_minsize: 1', f"chr_minsize: {chr_minsize}", line)
+            if (chr_maxsize != None):
+                line = re.sub(r'chr_maxsize: ALL', f"chr_maxsize: {chr_maxsize}", line)
+            if (width != None):
+                line = re.sub(r'width: 15', f"width: {width}", line)
+            if (height != None):
+                line = re.sub(r'height: 10', f"height: {height}", line)
+            if (plot_title != None):
+                line = re.sub(r'title: Ideogram plot of mapping results', f"plot_title: {plot_title}", line)
+            sources.write(line)
+
+def ideogram_plot(contig, feature, gff, chr_minsize, chr_maxsize, width, height, plot_title):
+
+    # Stdin check
+    sys_contents = ""
+    if gff == "stdin":
+        sys_contents = sys.stdin.readlines()
+    else:
+        pass
+
+    # Subset GFF based on chr and feature type
+    limit_info = dict()
+    if feature != None:
+        limit_info['gff_type'] = list(feature.split(','))
+
+    if feature != None:
+        with open('parsed_input.gff', "w") as out_handle:
+            for rec in GFF.parse(gzip_opener(stdin_checker(gff, sys_contents), "rt"), limit_info=limit_info):
+                GFF.write([rec], out_handle)
+    else:
+        with open('parsed_input.gff', "w") as out_handle:
+            with gzip_opener(stdin_checker(gff, sys_contents), "r") as sources:
+                lines = sources.readlines()
+            for line in lines:
+                out_handle.write(line)
+    
+    # convert gff to bed
+    subprocess.call(f"grep -v \"^#\" parsed_input.gff | cut -f 1,4,5 > features.bed && rm parsed_input.gff", shell=True)
+
+    # copy scripts to dir
+    subprocess.call(f"cp {os.path.dirname(__file__)}/../conda.recipe/bin/karyoploteR.R .", shell=True)
+    subprocess.call(f"cp {os.path.dirname(__file__)}/../conda.recipe/bin/run_karyoploter.sh .", shell=True)
+    subprocess.call(f"bash run_karyoploter.sh", shell=True)

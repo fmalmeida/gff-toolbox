@@ -55,6 +55,13 @@ from .convert import *
 from .plot import *
 from .ingest import *
 
+##########################################
+### Install the default signal handler ###
+### for piping                         ###
+##########################################
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE, SIG_DFL)
+
 ## Defining main
 def main():
     # Parse docopt
@@ -154,24 +161,35 @@ def main():
         ## Check GFF
         if args_plot['check-gff'] and args_plot['--input']:
             check_gff(args_plot['--input'])
+        
+        ## Features plots
+        elif args_plot['--plot'] == 'features' and args_plot['--contig']:
 
-        ## Single GFF
-        if args_plot['--input'] and args_plot['--start'] and args_plot['--end'] and args_plot['--contig'] and not args_plot['--fofn']:
-            print("Executing the pipeline for a single GFF input")
-            single_gff(infile=args_plot['--input'], start=args_plot['--start'], end=args_plot['--end'],
-                       contig=args_plot['--contig'], feature=args_plot['--feature'], coloring=args_plot['--color'],
-                       custom_label=args_plot['--label'], outfile=args_plot['--output'], plot_title=args_plot['--title'],
-                       qualifier=args_plot['--identification'], plot_width=args_plot['--width'], plot_height=args_plot['--height'])
-            print("Done, checkout the results in {}".format(args_plot['--output']))
+            ## Single GFF
+            if args_plot['--input'] and args_plot['--start'] and args_plot['--end'] and not args_plot['--fofn']:
+                print("Executing the pipeline for a single GFF input")
+                features_single_gff(infile=args_plot['--input'], start=args_plot['--start'], end=args_plot['--end'],
+                        contig=args_plot['--contig'], feature=args_plot['--feature'], coloring=args_plot['--color'],
+                        custom_label=args_plot['--label'], outfile=args_plot['--output'], plot_title=args_plot['--title'],
+                        qualifier=args_plot['--identification'], plot_width=args_plot['--width'], plot_height=args_plot['--height'])
+                print("Done, checkout the results in {}".format(args_plot['--output']))
 
-        ## Multiple GFFs
-        elif args_plot['--fofn'] and args_plot['--start'] and args_plot['--end'] and args_plot['--contig']:
-            print("Executing the pipeline for multiple GFF inputs")
-            multiple_gff(input_fofn=args_plot['--fofn'], start=args_plot['--start'], end=args_plot['--end'],
-                         contig=args_plot['--contig'], feature=args_plot['--feature'], outfile=args_plot['--output'],
-                         qualifier=args_plot['--identification'], plot_title=args_plot['--title'],
-                         plot_width=args_plot['--width'], plot_height=args_plot['--height'])
-            print("Done, checkout the results in {}".format(args_plot['--output']))
+            ## Multiple GFFs -- features plot
+            elif args_plot['--fofn'] and args_plot['--start'] and args_plot['--end'] and not args_plot['--input']:
+                print("Executing the pipeline for multiple GFF inputs")
+                features_multiple_gff(input_fofn=args_plot['--fofn'], start=args_plot['--start'], end=args_plot['--end'],
+                            contig=args_plot['--contig'], feature=args_plot['--feature'], outfile=args_plot['--output'],
+                            qualifier=args_plot['--identification'], plot_title=args_plot['--title'],
+                            plot_width=args_plot['--width'], plot_height=args_plot['--height'])
+                print("Done, checkout the results in {}".format(args_plot['--output']))
+        
+        ## Ideogram plots
+        elif args_plot['--plot'] == "ideogram" and args_plot['--input']:
+            generate_bed(infasta=args_plot['--ref_fasta'])
+            generate_yaml(chr_minsize=args_plot['--chr_minsize'], chr_maxsize=args_plot['--chr_maxsize'], width=args_plot['--width'], height=args_plot['--height'], plot_title=args_plot['--title'], outfile=args_plot['--output'])
+            ideogram_plot(gff=args_plot['--input'], contig=args_plot['--contig'], feature=args_plot['--feature'], chr_minsize=args_plot['--chr_minsize'], 
+            chr_maxsize=args_plot['--chr_maxsize'], width=args_plot['--width'], height=args_plot['--height'],
+            plot_title=args_plot['--title'])
 
         ## None
         else:
