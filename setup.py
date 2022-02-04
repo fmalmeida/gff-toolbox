@@ -43,5 +43,4 @@ setup(name='gff-toolbox',
       install_requires=required,
       entry_points={"console_scripts": ['gff-toolbox = gfftoolbox.__main__:main']},
       include_package_data=True,
-      zip_safe=False,
-      python_requires='>=3.6')
+      zip_safe=False)

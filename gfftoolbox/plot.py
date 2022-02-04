@@ -315,7 +315,7 @@ def generate_bed(infasta):
     subprocess.call(f"awk '{{ print $1 \"\t\" 1 \"\t\" $2 }}' {infasta}.fai > chr.bed", shell=True)
 
 def generate_yaml(chr_minsize, chr_maxsize, width, height, plot_title, outfile):
-    yaml_path=f"{os.path.dirname(__file__)}/../conda.recipe/bin/karyoploteR_config.yml"
+    yaml_path=f"{os.path.dirname(__file__)}/karyoploteR_config.yml"
     with open(yaml_path, "r") as sources:
         lines = sources.readlines()
     with open('./karyoploteR_config.yml', "w") as sources:
@@ -363,6 +363,6 @@ def ideogram_plot(contig, feature, gff, chr_minsize, chr_maxsize, width, height,
     subprocess.call(f"grep -v \"^#\" parsed_input.gff | cut -f 1,4,5 > features.bed && rm parsed_input.gff", shell=True)
 
     # copy scripts to dir
-    subprocess.call(f"cp {os.path.dirname(__file__)}/../conda.recipe/bin/karyoploteR.R .", shell=True)
-    subprocess.call(f"cp {os.path.dirname(__file__)}/../conda.recipe/bin/run_karyoploter.sh .", shell=True)
+    subprocess.call(f"cp {os.path.dirname(__file__)}/karyoploteR.R .", shell=True)
+    subprocess.call(f"cp {os.path.dirname(__file__)}/run_karyoploter.sh .", shell=True)
     subprocess.call(f"bash run_karyoploter.sh", shell=True)

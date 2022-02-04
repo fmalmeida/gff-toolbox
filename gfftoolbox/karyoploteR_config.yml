@@ -71,7 +71,7 @@ feat_label_font_size: .9
 #############################
 
 # title
-plot_title: Gene Plot
+title: Ideogram plot of mapping results
 
 # title font size
 title_font_size: 1.5
@@ -82,7 +82,7 @@ title_font_size: 1.5
 ## Read: https://bernatgel.github.io/karyoploter_tutorial//Tutorial/PlotParams/PlotParams.html
 
 # size (height) of chromosome ideograms in the plot
-ideogramheight: 50
+ideogramheight: 100
 
 # size (height) of the panel where the features are plotted
 data1height: 500
@@ -107,5 +107,5 @@ topmargin: 500
 output_filename: ./out.svg
 
 # svg
-width: 20
-height: 5
+width: 15
+height: 10
