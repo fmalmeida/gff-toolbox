@@ -41,7 +41,7 @@ requirements:
     - setuptools
     - setuptools-git
     - pandas
-    - biopython==1.78
+    - biopython>=1.78
     - docopt
     - pprintpp
     - bcbio-gff

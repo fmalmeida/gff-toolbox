@@ -6,3 +6,4 @@ bcbio-gff
 matplotlib
 pandas
 pymongo
+pyfaidx

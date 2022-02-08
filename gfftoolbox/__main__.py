@@ -186,10 +186,9 @@ def main():
         ## Ideogram plots
         elif args_plot['--plot'] == "ideogram" and args_plot['--input']:
             generate_bed(infasta=args_plot['--ref_fasta'])
-            generate_yaml(chr_minsize=args_plot['--chr_minsize'], chr_maxsize=args_plot['--chr_maxsize'], width=args_plot['--width'], height=args_plot['--height'], plot_title=args_plot['--title'], outfile=args_plot['--output'])
-            ideogram_plot(gff=args_plot['--input'], contig=args_plot['--contig'], feature=args_plot['--feature'], chr_minsize=args_plot['--chr_minsize'], 
-            chr_maxsize=args_plot['--chr_maxsize'], width=args_plot['--width'], height=args_plot['--height'],
-            plot_title=args_plot['--title'])
+            generate_yaml(chr_minsize=args_plot['--chr_minsize'], chr_maxsize=args_plot['--chr_maxsize'], width=args_plot['--width'], height=args_plot['--height'],
+            coloring=args_plot['--color'],custom_label=args_plot['--label'],plot_title=args_plot['--title'], outfile=args_plot['--output'])
+            ideogram_plot(gff=args_plot['--input'], feature=args_plot['--feature'])
 
         ## None
         else:

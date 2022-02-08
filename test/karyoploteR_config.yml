@@ -49,19 +49,12 @@ feat_maxsize: ALL
 # window size for calculating and plotting feature density
 feat_density_window: 1000000
 
-# color for feature density plot
-# if using HEX must be in quotes
-feat_density_color: "#313D7C"
-
-# label for density plot
-feat_density_plot_label: "Target features"
-
 # color for feature plot as "ticks" -- features are plotted as small bars
 # if using HEX must be in quotes
-feat_bars_color: "#B22222"
+feat_bars_color: "#ccccff"
 
 # label for features plot
-feat_plot_label: "Target features"
+feat_plot_label: Gene
 
 # features plot label font size
 feat_label_font_size: .9

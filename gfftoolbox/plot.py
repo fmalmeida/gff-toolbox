@@ -22,8 +22,9 @@ options:
 
     -v --version                            Show version information.
 
-    check-gff                               Does a simple parsing of the GFF file so the user knows the available qualifiers that
-                                            can be used as gene identifiers. GFF qualifiers are retrieved from the 9th column.
+    check-gff                               Does a simple parsing of the GFF file so the user knows the 
+                                            available qualifiers that can be used as gene identifiers.
+                                            GFF qualifiers are retrieved from the 9th column.
                                             Same as gff-toolbox overview command.
                                 
                                 ##############
@@ -32,7 +33,8 @@ options:
 
     -i, --input=<gff>                       Used to plot dna features from a single GFF file [Default: stdin].
 
-    -f, --fofn=<file>                       Used to plot dna multiple features from multiple GFF files. Contents must be in csv format with 3 columns:
+    -f, --fofn=<file>                       Used to plot dna multiple features from multiple GFF files. 
+                                            Contents must be in csv format with 3 columns:
                                             gff,custom_label,color (HEX format). Features from each GFF will have the color set in the 3rd column.
                                             Useful to compare annotations and to plot features with different colors if you separate them into multiple
                                             gff files each containing one type of feature.
@@ -45,6 +47,9 @@ options:
 
     -t, --title=<title>                     Legend/plot title. [Default: Gene Plot].
 
+    -l, --label=<label>                     Custom label for plotting features. This is the string that 
+                                            appears in the legend. [Default: Gene].
+
     --width=<width>                         Plot width ratio. [Default: 20].
 
     --height=<height>                       Plot height ratio. [Default: 5].
@@ -52,7 +57,10 @@ options:
     -o, --output=<png_out>                  Output SVG/PNG filename. [Default: ./out.png].
                                             You can output SVG with: "-o out.svg"
     
-    --feature=<feature_type>                Type of the GFF feature (3rd column) which you want to plot. It is possible to set more than one feature to be
+    --color=<color>                         HEX entry for desired plotting color. [Default: #ccccff].
+    
+    --feature=<feature_type>                Type of the GFF feature (3rd column) which you want to plot.
+                                            It is possible to set more than one feature to be
                                             plotted by giving it separated by commas, eg. CDS,rRNA.
 
                                 #####################################
@@ -68,10 +76,6 @@ options:
     --identification=<id>                   Which GFF qualifier must be used as gene identification to write in the plot?
                                             Please check for available qualifiers with 'check-gff'. Must be the exact name
                                             of the key found in the attributes columns. [Default: ID].
-
-    -l, --label=<label>                     Custom label for plotting features. This is the string that appears in the legend. [Default: Gene].
-
-    --color=<color>                         HEX entry for desired plotting color. [Default: #ccccff].
 
                                 #####################################
                                 ### Definitions for ideogram plot ###
@@ -102,13 +106,17 @@ $ gff-toolbox plot -f kp_gffs.fofn --start 10000 --end 20000 --contig NC_016845.
     ## parameter --identification to the exact name of the key in the attributes column.
 
 $ gff-toolbox plot -f kp_gffs.fofn --start 10000 --end 20000 --contig NC_016845.1 -t "Kp annotation" --feature CDS,rRNA,tRNA --identification product
+
+    ## Generating an ideogram plot using karyoploteR package
+    ## plotting only the rRNA features
+
+$ gff-toolbox plot -p ideogram --ref_fasta Kpneumoniae_genome.fasta --input Kp_ref.gff --feature rRNA
 """
 
 ##################################
 ### Loading Necessary Packages ###
 ##################################
 from dna_features_viewer import *
-import Bio.SeqIO
 from pprintpp import pprint
 from BCBio import GFF
 from BCBio.GFF import GFFExaminer
@@ -314,7 +322,7 @@ def generate_bed(infasta):
     subprocess.call(f"faidx --no-output {infasta}", shell=True)
     subprocess.call(f"awk '{{ print $1 \"\t\" 1 \"\t\" $2 }}' {infasta}.fai > chr.bed", shell=True)
 
-def generate_yaml(chr_minsize, chr_maxsize, width, height, plot_title, outfile):
+def generate_yaml(chr_minsize, chr_maxsize, width, height, coloring, custom_label, plot_title, outfile):
     yaml_path=f"{os.path.dirname(__file__)}/karyoploteR_config.yml"
     with open(yaml_path, "r") as sources:
         lines = sources.readlines()
@@ -330,11 +338,15 @@ def generate_yaml(chr_minsize, chr_maxsize, width, height, plot_title, outfile):
                 line = re.sub(r'width: 15', f"width: {width}", line)
             if (height != None):
                 line = re.sub(r'height: 10', f"height: {height}", line)
+            if (coloring != None):
+                line = re.sub(r'feat_bars_color: "#B22222"', f"feat_bars_color: \"{coloring}\"", line)
+            if (custom_label != None):
+                line = re.sub(r'feat_plot_label: "Location of target features"', f"feat_plot_label: {custom_label}", line)
             if (plot_title != None):
                 line = re.sub(r'title: Ideogram plot of mapping results', f"plot_title: {plot_title}", line)
             sources.write(line)
 
-def ideogram_plot(contig, feature, gff, chr_minsize, chr_maxsize, width, height, plot_title):
+def ideogram_plot(feature, gff):
 
     # Stdin check
     sys_contents = ""
@@ -360,7 +372,7 @@ def ideogram_plot(contig, feature, gff, chr_minsize, chr_maxsize, width, height,
                 out_handle.write(line)
     
     # convert gff to bed
-    subprocess.call(f"grep -v \"^#\" parsed_input.gff | cut -f 1,4,5 > features.bed && rm parsed_input.gff", shell=True)
+    subprocess.call(f"grep -v \"^#\" parsed_input.gff | grep -v \"remark\" | cut -f 1,4,5 > features.bed && rm parsed_input.gff", shell=True)
 
     # copy scripts to dir
     subprocess.call(f"cp {os.path.dirname(__file__)}/karyoploteR.R .", shell=True)

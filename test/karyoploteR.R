@@ -174,16 +174,16 @@ kpAddBaseNumbers(
 ## data.panel = "ideogram" Is used to plot inside the ideograms
 
 # plot density
-kpPlotDensity(
-  kp,
-  features.gr,
-  window.size = config$feat_density_window,
-  data.panel = 1,
-  col=config$feat_density_color,
-  border=config$feat_density_color,
-  r0 = 0,       # begin from where in data panel?
-  r1 = 0.5      # finish where in data panel?
-)
+# kpPlotDensity(
+#   kp,
+#   features.gr,
+#   window.size = config$feat_density_window,
+#   data.panel = 1,
+#   col=config$feat_density_color,
+#   border=config$feat_density_color,
+#   r0 = 0,       # begin from where in data panel?
+#   r1 = 0.5      # finish where in data panel?
+# )
 
 #####################################
 ### Plot features as "tick marks" ###
@@ -201,20 +201,18 @@ kpPlotRegions(
   col=config$feat_bars_color,
   layer.margin = 0.05, 
   border=config$feat_bars_color,
-  r0=0.55,      # begin from where in data panel?
-  r1=1          # finish where in data panel?
+  r0=0.05,         # begin from where in data panel?
+  r1=0.95          # finish where in data panel?
 )
 
 ## Add legend
 legend(
   x = "bottomright", 
   legend = c(
-    config$feat_plot_label,
-    config$feat_density_plot_label
+    config$feat_plot_label
   ),
   fill = c(
-    config$feat_bars_color,
-    config$feat_density_color
+    config$feat_bars_color
   ),
   border=NA, 
   cex = config$feat_label_font_size
