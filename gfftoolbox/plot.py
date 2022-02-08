@@ -319,8 +319,7 @@ def features_multiple_gff(input_fofn, start, end, contig, qualifier, feature, ou
 ### Functions for ideogram plots ###
 ####################################
 def generate_bed(infasta):
-    subprocess.call(f"faidx --no-output {infasta}", shell=True)
-    subprocess.call(f"awk '{{ print $1 \"\t\" 1 \"\t\" $2 }}' {infasta}.fai > chr.bed", shell=True)
+    subprocess.call(f"zcat -f {infasta} > tmp.fna && faidx tmp.fna -i bed > chr.bed && rm tmp.fna*", shell=True)
 
 def generate_yaml(chr_minsize, chr_maxsize, width, height, coloring, custom_label, plot_title, outfile):
     yaml_path=f"{os.path.dirname(__file__)}/karyoploteR_config.yml"
