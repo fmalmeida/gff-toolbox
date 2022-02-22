@@ -126,9 +126,11 @@ import binascii
 import gzip
 import tempfile
 import sys
-import subprocess
-import os
-import re
+from pyfaidx import Fasta
+import pandas as pd
+import matplotlib.pyplot as plt
+import pandas as pd
+from matplotlib.collections import BrokenBarHCollection
 
 ###################
 ### Stdin Check ###
@@ -318,62 +320,103 @@ def features_multiple_gff(input_fofn, start, end, contig, qualifier, feature, ou
 ####################################
 ### Functions for ideogram plots ###
 ####################################
-def generate_bed(infasta):
-    subprocess.call(f"zcat -f {infasta} > tmp.fna && faidx tmp.fna -i bed > chr.bed && rm tmp.fna*", shell=True)
+def generate_bed(ref_fasta):
+    rows = []
+    for rec in Fasta(ref_fasta):
+        rows.append([ rec.name, 1, len(rec), "whitesmoke" ])
+    return pd.DataFrame(rows, columns=["chrom", "start", "end", "colors"])
 
-def generate_yaml(chr_minsize, chr_maxsize, width, height, coloring, custom_label, plot_title, outfile):
-    yaml_path=f"{os.path.dirname(__file__)}/karyoploteR_config.yml"
-    with open(yaml_path, "r") as sources:
-        lines = sources.readlines()
-    with open('./karyoploteR_config.yml', "w") as sources:
-        for line in lines:
-            line = re.sub(r'minimap2_karyoploteR.svg', f"{outfile}", line)
-            line = re.sub(r'.png', ".svg", line)
-            if (chr_maxsize != None):
-                line = re.sub(r'chr_minsize: 1', f"chr_minsize: {chr_minsize}", line)
-            if (chr_maxsize != None):
-                line = re.sub(r'chr_maxsize: ALL', f"chr_maxsize: {chr_maxsize}", line)
-            if (width != None):
-                line = re.sub(r'width: 15', f"width: {width}", line)
-            if (height != None):
-                line = re.sub(r'height: 10', f"height: {height}", line)
-            if (coloring != None):
-                line = re.sub(r'feat_bars_color: "#B22222"', f"feat_bars_color: \"{coloring}\"", line)
-            if (custom_label != None):
-                line = re.sub(r'feat_plot_label: "Location of target features"', f"feat_plot_label: {custom_label}", line)
-            if (plot_title != None):
-                line = re.sub(r'title: Ideogram plot of mapping results', f"plot_title: {plot_title}", line)
-            sources.write(line)
+# the following functions are heavily inspired by the follwoing gist:
+# https://gist.github.com/daler/c98fc410282d7570efc3
+def chromosome_collections(df, y_positions, height, **kwargs):
+    """
+    Yields BrokenBarHCollection of features that can be added to an Axes
+    object.
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Must at least have columns ['chrom', 'start', 'end', 'color']. If no
+        column 'width', it will be calculated from start/end.
+    y_positions : dict
+        Keys are chromosomes, values are y-value at which to anchor the
+        BrokenBarHCollection
+    height : float
+        Height of each BrokenBarHCollection
+    Additional kwargs are passed to BrokenBarHCollection
+    """
+    del_width = False
+    if 'width' not in df.columns:
+        del_width = True
+        df['width'] = df['end'] - df['start']
+    for chrom, group in df.groupby('chrom'):
+        yrange = (y_positions[chrom], height)
+        xranges = group[['start', 'width']].values
+        yield BrokenBarHCollection(
+            xranges, yrange, facecolors=group['colors'])
+    if del_width:
+        del df['width']
 
-def ideogram_plot(feature, gff):
+def ideogram_plot(ref_fasta):
 
-    # Stdin check
-    sys_contents = ""
-    if gff == "stdin":
-        sys_contents = sys.stdin.readlines()
-    else:
-        pass
+    # call chromsizes
+    chromsizes = generate_bed(ref_fasta)
 
-    # Subset GFF based on chr and feature type
-    limit_info = dict()
-    if feature != None:
-        limit_info['gff_type'] = list(feature.split(','))
+    # initialize a figure/
+    fig, ax = plt.subplots(1, 1, figsize=(10, 7))
 
-    if feature != None:
-        with open('parsed_input.gff', "w") as out_handle:
-            for rec in GFF.parse(gzip_opener(stdin_checker(gff, sys_contents), "rt"), limit_info=limit_info):
-                GFF.write([rec], out_handle)
-    else:
-        with open('parsed_input.gff', "w") as out_handle:
-            with gzip_opener(stdin_checker(gff, sys_contents), "r") as sources:
-                lines = sources.readlines()
-            for line in lines:
-                out_handle.write(line)
+    # add regions to the axis
+    chrom_height = 1  # Height of each ideogram
+    chrom_spacing = 1  # Spacing between consecutive ideograms
+
+    gene_height = 0.4  # Height of the gene track < `chrom_spacing`
+    gene_padding = 0.1  # Padding between the top of a gene track ideogram
+
+    # Decide which chromosomes to use
+    chromosome_list = list(chromsizes.chrom)
+
+    # Keep track of the y positions genes for each chromosome
+    # and center of each ideogram (which is where we'll put the ytick labels)
+    ybase = 0
+    chrom_ybase = {}
+    gene_ybase = {}
+    chrom_centers = {}
+
+    # Items in the beginning of `chromosome_list` will
+    # appear at the top of the plot
+    for chrom in chromosome_list[::-1]:
+        chrom_ybase[chrom] = ybase
+        chrom_centers[chrom] = ybase + chrom_height / 2.
+        gene_ybase[chrom] = ybase - gene_height - gene_padding
+        ybase += chrom_height + chrom_spacing
+
+    # add chromsizes to ax
+    ideo = chromsizes
+
+    # Add a new column for width
+    ideo['width'] = ideo.end - ideo.start
+
+    # Add a collection of the query chromsizes
+    for collection in chromosome_collections(ideo, chrom_ybase, chrom_height, edgecolor='k'):
+        ax.add_collection(collection)
     
-    # convert gff to bed
-    subprocess.call(f"grep -v \"^#\" parsed_input.gff | grep -v \"remark\" | cut -f 1,4,5 > features.bed && rm parsed_input.gff", shell=True)
+    # legend
+    leg = []
+    leg_lab = []
 
-    # copy scripts to dir
-    subprocess.call(f"cp {os.path.dirname(__file__)}/karyoploteR.R .", shell=True)
-    subprocess.call(f"cp {os.path.dirname(__file__)}/run_karyoploter.sh .", shell=True)
-    subprocess.call(f"bash run_karyoploter.sh", shell=True)
+    # add to ax
+    ax.set_yticks([chrom_centers[i] for i in chromosome_list])
+    ax.set_yticklabels(chromosome_list)
+
+    ax.legend(leg, leg_lab, loc=4)
+    ax.axis("tight")
+
+    # xtick formatting: position in Mbps
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, n: int(x/1e6)))
+
+    # labels
+    ax.set_title(f"Karyopype", fontsize=14)
+    plt.xlabel('Chromosome Position (Mbp)', fontsize=14)
+    plt.ylabel(f'Chromosome', fontsize=14)
+    plt.savefig(f'_karyopype.png')
+
+    return(plt)

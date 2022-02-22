@@ -62,6 +62,12 @@ from .ingest import *
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
+###################################################
+### Def function to get function args from dict ###
+###################################################
+def get_args(f, dict):
+    return { key: dict[f"--{key}"] for key in f.__code__.co_varnames[0:f.__code__.co_argcount] }
+
 ## Defining main
 def main():
     # Parse docopt
@@ -185,10 +191,10 @@ def main():
         
         ## Ideogram plots
         elif args_plot['--plot'] == "ideogram" and args_plot['--input']:
-            generate_bed(infasta=args_plot['--ref_fasta'])
-            generate_yaml(chr_minsize=args_plot['--chr_minsize'], chr_maxsize=args_plot['--chr_maxsize'], width=args_plot['--width'], height=args_plot['--height'],
-            coloring=args_plot['--color'],custom_label=args_plot['--label'],plot_title=args_plot['--title'], outfile=args_plot['--output'])
-            ideogram_plot(gff=args_plot['--input'], feature=args_plot['--feature'])
+            ideogram_plot(**get_args(ideogram_plot, args_plot))
+            # generate_yaml(chr_minsize=args_plot['--chr_minsize'], chr_maxsize=args_plot['--chr_maxsize'], width=args_plot['--width'], height=args_plot['--height'],
+            # coloring=args_plot['--color'],custom_label=args_plot['--label'],plot_title=args_plot['--title'], outfile=args_plot['--output'])
+            # ideogram_plot(gff=args_plot['--input'], feature=args_plot['--feature'])
 
         ## None
         else:
