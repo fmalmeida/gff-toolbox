@@ -14,7 +14,7 @@ build:
 
 requirements:
   build:
-    - python >=3.7,{{PY_VER}}*
+    - python >=3.10,{{PY_VER}}*
     - setuptools
     - setuptools-git
     - pandas
