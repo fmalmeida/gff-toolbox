@@ -14,7 +14,7 @@ build:
 
 requirements:
   build:
-    - python >=3.10,{{PY_VER}}*
+    - python>=3.8
     - setuptools
     - setuptools-git
     - pandas
@@ -28,7 +28,7 @@ requirements:
     - mongodb
 
   run:
-    - python {{PY_VER}}*
+    - python>=3.8
     - setuptools
     - setuptools-git
     - pandas
