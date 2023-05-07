@@ -1,4 +1,5 @@
 # remove everything
+conda update -n base conda --yes
 conda build purge-all
 conda clean -afy
 
