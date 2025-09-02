@@ -14,11 +14,11 @@ build:
 
 requirements:
   build:
-    - python>=3.8
+    - python>=3.10
     - setuptools
     - setuptools-git
     - pandas
-    - biopython==1.78
+    - biopython==1.85
     - docopt
     - pprintpp
     - bcbio-gff
@@ -28,11 +28,11 @@ requirements:
     - mongodb
 
   run:
-    - python>=3.8
+    - python>=3.10
     - setuptools
     - setuptools-git
     - pandas
-    - biopython==1.78
+    - biopython==1.85
     - docopt
     - pprintpp
     - bcbio-gff
